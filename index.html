@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CPARS Transportation LLC – Houston, Texas</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="sections-styles.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚛</text></svg>"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+  <div id="s-navbar"></div>
+  <div id="s-hero"></div>
+  <div id="s-toc"></div>
+  <div id="s-about"></div>
+  <div id="s-services"></div>
+  <div id="s-hazmat"></div>
+  <div id="s-safety"></div>
+  <div id="s-fleet"></div>
+  <div id="s-why"></div>
+  <div id="s-contact"></div>
+  <div id="s-footer"></div>
+
+  <script>
+    /* ══════════════════════════════
+       LOAD ALL SECTIONS
+    ══════════════════════════════ */
+    const sections = [
+      ['s-navbar',   'sections/navbar.html'],
+      ['s-hero',     'sections/hero.html'],
+      ['s-toc',      'sections/toc.html'],
+      ['s-about',    'sections/about.html'],
+      ['s-services', 'sections/services.html'],
+      ['s-hazmat',   'sections/hazmat.html'],
+      ['s-safety',   'sections/safety.html'],
+      ['s-fleet',    'sections/fleet.html'],
+      ['s-why',      'sections/why.html'],
+      ['s-contact',  'sections/contact.html'],
+      ['s-footer',   'sections/footer.html'],
+    ];
+
+    Promise.all(sections.map(([id, file]) =>
+      fetch(file).then(r => r.text()).then(html => {
+        document.getElementById(id).innerHTML = html;
+      })
+    )).then(() => {
+      initSlider();
+      initNavbar();
+      initContact();
+      checkReturningUser();
+    });
+
+    /* ══════════════════════════════
+       SLIDER
+    ══════════════════════════════ */
+    function initSlider() {
+      let current = 0;
+      const slides = document.querySelectorAll('.slide');
+      const dots   = document.querySelectorAll('.dot');
+      if (!slides.length) return;
+      window.goToSlide = (n) => {
+        slides[current].classList.remove('active');
+        dots[current].classList.remove('active');
+        current = n;
+        slides[current].classList.add('active');
+        dots[current].classList.add('active');
+      };
+      setInterval(() => window.goToSlide((current + 1) % slides.length), 3500);
+    }
+
+    /* ══════════════════════════════
+       NAVBAR
+    ══════════════════════════════ */
+    function initNavbar() {
+      window.toggleMenu = () => {
+        document.getElementById('mobileMenu').classList.toggle('open');
+      };
+      window.addEventListener('scroll', () => {
+        const nav = document.querySelector('.navbar');
+        if (nav) nav.classList.toggle('scrolled', window.scrollY > 50);
+      });
+    }
+
+    /* ══════════════════════════════
+       STORAGE HELPERS
+    ══════════════════════════════ */
+    const STORAGE_KEY = 'cpars_last_request';
+    const COOKIE_KEY  = 'cpars_ref';
+    const TTL_DAYS    = 30;
+
+    function saveRequest(data) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, savedAt: Date.now() })); } catch(e) {}
+      const expires = new Date(Date.now() + TTL_DAYS * 86400000).toUTCString();
+      document.cookie = `${COOKIE_KEY}=${data.ref}; expires=${expires}; path=/; SameSite=Lax`;
+    }
+
+    function loadRequest() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if ((Date.now() - data.savedAt) / 86400000 < TTL_DAYS) return data;
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch(e) {}
+      const match = document.cookie.match(new RegExp(`${COOKIE_KEY}=([^;]+)`));
+      if (match) return { ref: match[1], cookieOnly: true };
+      return null;
+    }
+
+    function clearRequest() {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+      document.cookie = `${COOKIE_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    }
+
+    /* ══════════════════════════════
+       RETURNING USER BANNER
+    ══════════════════════════════ */
+    function checkReturningUser() {
+      const saved = loadRequest();
+      if (!saved) return;
+      const banner   = document.getElementById('returningBanner');
+      const bannerRef = document.getElementById('bannerRef');
+      if (!banner) return;
+      bannerRef.textContent = saved.ref || 'your previous request';
+      banner.style.display = 'block';
+      banner.style.opacity = '0';
+      banner.style.transform = 'translateY(-10px)';
+      requestAnimationFrame(() => {
+        banner.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        banner.style.opacity = '1';
+        banner.style.transform = 'translateY(0)';
+      });
+    }
+
+    window.showLastRequest = () => {
+      const saved = loadRequest();
+      if (!saved) return;
+      dismissBanner();
+      document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        if (saved.cookieOnly) {
+          document.getElementById('displayRef').textContent = saved.ref;
+          document.getElementById('confirmDetails').innerHTML = `
+            <div class="cdetail"><span>Reference</span><strong>${saved.ref}</strong></div>
+            <div class="cdetail"><span>Note</span><strong>Full details were in your confirmation email</strong></div>
+          `;
+        } else {
+          showConfirmation(saved);
+        }
+        document.getElementById('quoteForm').style.display = 'none';
+        document.getElementById('confirmationPanel').style.display = 'flex';
+      }, 600);
+    };
+
+    window.dismissBanner = () => {
+      const banner = document.getElementById('returningBanner');
+      if (banner) {
+        banner.style.opacity = '0';
+        setTimeout(() => banner.style.display = 'none', 300);
+      }
+    };
+
+    /* ══════════════════════════════
+       CONTACT FORM
+    ══════════════════════════════ */
+    function initContact() {
+      // Clear errors on input
+      document.addEventListener('input', (e) => {
+        if (e.target.closest('#quoteForm')) {
+          e.target.classList.remove('input-error');
+          const err = e.target.parentNode.querySelector('.field-error');
+          if (err) err.remove();
+          const note = document.getElementById('formNote');
+          if (note) note.textContent = '';
+        }
+      });
+      document.addEventListener('change', (e) => {
+        if (e.target.closest('#quoteForm')) {
+          e.target.classList.remove('input-error');
+          const err = e.target.parentNode.querySelector('.field-error');
+          if (err) err.remove();
+        }
+      });
+    }
+
+    function generateRef() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let ref = 'CPARS-';
+      for (let i = 0; i < 8; i++) ref += chars[Math.floor(Math.random() * chars.length)];
+      return ref;
+    }
+
+    function showConfirmation(data) {
+      document.getElementById('displayRef').textContent = data.ref;
+      document.getElementById('confirmDetails').innerHTML = `
+        <div class="cdetail"><span>Name</span><strong>${data.name || '—'}</strong></div>
+        <div class="cdetail"><span>Email</span><strong>${data.email || '—'}</strong></div>
+        <div class="cdetail"><span>Phone</span><strong>${data.phone || '—'}</strong></div>
+        <div class="cdetail"><span>Service</span><strong>${data.service || '—'}</strong></div>
+        <div class="cdetail"><span>Pickup</span><strong>${data.origin || '—'}</strong></div>
+        <div class="cdetail"><span>Destination</span><strong>${data.destination || '—'}</strong></div>
+        <div class="cdetail"><span>Submitted</span><strong>${data.submittedAt || '—'}</strong></div>
+      `;
+    }
+
+    window.submitQuote = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const form = e.target;
+      const btn  = document.getElementById('submitBtn');
+      const note = document.getElementById('formNote');
+
+      // Clear previous errors
+      document.querySelectorAll('.field-error').forEach(el => el.remove());
+      document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+
+      // Validate required fields
+      const required = [
+        { id: 'f-name',        label: 'Full Name' },
+        { id: 'f-email',       label: 'Email Address' },
+        { id: 'f-phone',       label: 'Phone Number' },
+        { id: 'f-service',     label: 'Service Type' },
+        { id: 'f-origin',      label: 'Pickup Location' },
+        { id: 'f-destination', label: 'Delivery Destination' },
+        { id: 'f-message',     label: 'Shipment Details' },
+      ];
+
+      let hasError = false;
+      required.forEach(({ id, label }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!el.value.trim()) {
+          el.classList.add('input-error');
+          const err = document.createElement('p');
+          err.className = 'field-error';
+          err.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${label} is required`;
+          el.parentNode.appendChild(err);
+          if (!hasError) { el.focus(); hasError = true; }
+        }
+      });
+
+      // Email format
+      const emailEl = document.getElementById('f-email');
+      if (emailEl && emailEl.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value)) {
+        emailEl.classList.add('input-error');
+        const existing = emailEl.parentNode.querySelector('.field-error');
+        if (!existing) {
+          const err = document.createElement('p');
+          err.className = 'field-error';
+          err.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please enter a valid email address';
+          emailEl.parentNode.appendChild(err);
+        }
+        hasError = true;
+      }
+
+      if (hasError) {
+        note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please fill in all required fields above.';
+        note.style.color = '#dc2626';
+        return false;
+      }
+
+      const name        = document.getElementById('f-name').value.trim();
+      const email       = document.getElementById('f-email').value.trim();
+      const phone       = document.getElementById('f-phone').value.trim() || '—';
+      const service     = document.getElementById('f-service').value      || '—';
+      const origin      = document.getElementById('f-origin').value.trim() || '—';
+      const destination = document.getElementById('f-destination').value.trim() || '—';
+      const ref         = generateRef();
+      const submittedAt = new Date().toLocaleString();
+
+      document.getElementById('f-ref').value     = ref;
+      document.getElementById('f-replyto').value = email;
+      document.getElementById('f-subject').value = `[${ref}] New Quote Request — CPARS Transportation`;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+      note.textContent = '';
+
+      try {
+        const res = await fetch('https://formspree.io/f/xjgqyjgw', {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (res.ok) {
+          const requestData = { ref, name, email, phone, service, origin, destination, submittedAt };
+          saveRequest(requestData);
+          showConfirmation(requestData);
+          form.style.display = 'none';
+          const panel = document.getElementById('confirmationPanel');
+          panel.style.display = 'flex';
+          panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          dismissBanner();
+        } else {
+          throw new Error('Server error');
+        }
+      } catch {
+        note.textContent = '⚠️ Something went wrong. Please try again or call +1 (352) 213-8976.';
+        note.style.color = '#dc2626';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Quote Request';
+      }
+
+      return false;
+    };
+
+    window.copyRef = () => {
+      const ref = document.getElementById('displayRef').textContent;
+      navigator.clipboard.writeText(ref).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy'; }, 2000);
+      });
+    };
+
+    window.resetForm = () => {
+      clearRequest();
+      const form = document.getElementById('quoteForm');
+      form.reset();
+      form.style.display = 'flex';
+      document.getElementById('confirmationPanel').style.display = 'none';
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Quote Request';
+      document.getElementById('formNote').textContent = '';
+    };
+
+  </script>
+
+</body>
+</html>

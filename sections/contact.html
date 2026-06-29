@@ -1,0 +1,180 @@
+<!-- ═══════════════════════════════
+     CONTACT SECTION — HTML only
+     All JavaScript is in index.html
+═══════════════════════════════ -->
+
+<!-- RETURNING USER BANNER -->
+<div id="returningBanner" class="returning-banner" style="display:none;">
+  <div class="container returning-inner">
+    <div class="returning-left">
+      <i class="fa-solid fa-bell"></i>
+      <div>
+        <strong>Welcome back!</strong>
+        <p>You have a pending quote request — <span id="bannerRef"></span></p>
+      </div>
+    </div>
+    <div class="returning-actions">
+      <button class="banner-btn-view" onclick="showLastRequest()">View My Request</button>
+      <button class="banner-btn-dismiss" onclick="dismissBanner()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+</div>
+
+<section class="contact section" id="contact">
+  <div class="container">
+
+    <div class="section-header">
+      <span class="tag">Contact Us</span>
+      <h2>Get Your Free Quote Today</h2>
+      <p>Fill out the form below. We'll review your request and respond within the hour during business hours.</p>
+    </div>
+
+    <div class="contact-inner">
+
+      <!-- LEFT: Contact Info + Steps -->
+      <div class="contact-info">
+        <div class="contact-details">
+          <div class="contact-item">
+            <i class="fa-solid fa-phone"></i>
+            <div><strong>Phone</strong><span>+1 (352) 213-8976</span></div>
+          </div>
+          <div class="contact-item">
+            <i class="fa-solid fa-envelope"></i>
+            <div><strong>Email</strong><span>arthurwambui08@gmail.com</span></div>
+          </div>
+          <div class="contact-item">
+            <i class="fa-solid fa-globe"></i>
+            <div><strong>Website</strong><span>www.cparstransportation.com</span></div>
+          </div>
+          <div class="contact-item">
+            <i class="fa-solid fa-location-dot"></i>
+            <div><strong>Address</strong><span>55 Butterfield Rd, Houston, Texas 77090</span></div>
+          </div>
+          <div class="contact-item">
+            <i class="fa-solid fa-clock"></i>
+            <div><strong>Availability</strong><span>24/7 — Always reachable</span></div>
+          </div>
+        </div>
+
+        <div class="how-it-works">
+          <h4><i class="fa-solid fa-circle-info"></i> How It Works</h4>
+          <div class="step">
+            <span class="step-num">1</span>
+            <div><strong>Submit your request</strong><p>Fill out the form — takes 60 seconds.</p></div>
+          </div>
+          <div class="step">
+            <span class="step-num">2</span>
+            <div><strong>Get your reference</strong><p>A unique reference number is saved to your device and emailed to you automatically.</p></div>
+          </div>
+          <div class="step">
+            <span class="step-num">3</span>
+            <div><strong>We respond fast</strong><p>CPARS replies to your email directly — usually within the hour.</p></div>
+          </div>
+          <div class="step">
+            <span class="step-num">4</span>
+            <div><strong>Come back anytime</strong><p>Even if you close this page, your request is remembered on this device for 30 days.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Form / Confirmation -->
+      <div class="contact-form-wrap">
+
+        <!-- FORM -->
+        <form id="quoteForm" class="contact-form" onsubmit="return submitQuote(event)">
+          <div class="form-label-row">
+            <h3>Request a Quote</h3>
+            <span class="form-secure"><i class="fa-solid fa-lock"></i> Secure & Remembered</span>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label>Full Name <span class="req">*</span></label>
+              <input type="text" name="name" id="f-name" placeholder="John Smith"/>
+            </div>
+            <div class="input-group">
+              <label>Email Address <span class="req">*</span></label>
+              <input type="email" name="email" id="f-email" placeholder="you@email.com"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label>Phone Number <span class="req">*</span></label>
+              <input type="tel" name="phone" id="f-phone" placeholder="+1 (000) 000-0000"/>
+            </div>
+            <div class="input-group">
+              <label>Service Type <span class="req">*</span></label>
+              <select name="service" id="f-service">
+                <option value="">Select a service</option>
+                <option>Full Truckload (FTL)</option>
+                <option>Less Than Truckload (LTL)</option>
+                <option>Local & Regional Hauling</option>
+                <option>Hotshot & Expedited</option>
+                <option>Dry Van Transport</option>
+                <option>Hazmat Transport</option>
+                <option>Freight Coordination</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label>Pickup Location <span class="req">*</span></label>
+              <input type="text" name="origin" id="f-origin" placeholder="City, State"/>
+            </div>
+            <div class="input-group">
+              <label>Delivery Destination <span class="req">*</span></label>
+              <input type="text" name="destination" id="f-destination" placeholder="City, State"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Shipment Details <span class="req">*</span></label>
+            <textarea name="message" id="f-message" placeholder="Describe your load — cargo type, weight, dimensions, timeline..." rows="4"></textarea>
+          </div>
+          <input type="hidden" name="_subject"         id="f-subject"  value="New Quote Request — CPARS Transportation"/>
+          <input type="hidden" name="reference_number" id="f-ref"/>
+          <input type="hidden" name="_replyto"         id="f-replyto"/>
+          <button type="submit" class="btn-primary btn-full" id="submitBtn">
+            <i class="fa-solid fa-paper-plane"></i> Send Quote Request
+          </button>
+          <p class="form-note" id="formNote"></p>
+        </form>
+
+        <!-- CONFIRMATION PANEL -->
+        <div id="confirmationPanel" class="confirmation-panel" style="display:none;">
+          <div class="confirm-icon"><i class="fa-solid fa-circle-check"></i></div>
+          <h3>Request Sent Successfully!</h3>
+          <p>Your quote request has been received. A confirmation was sent to your email and saved on this device.</p>
+
+          <div class="ref-box">
+            <span class="ref-label">Your Reference Number</span>
+            <span class="ref-number" id="displayRef">—</span>
+            <button class="copy-btn" onclick="copyRef()"><i class="fa-solid fa-copy"></i> Copy</button>
+          </div>
+
+          <div class="memory-note">
+            <i class="fa-solid fa-microchip"></i>
+            <span>Saved on your device for 30 days — you'll see this automatically if you return.</span>
+          </div>
+
+          <div class="confirm-details" id="confirmDetails"></div>
+
+          <div class="confirm-steps">
+            <div class="cstep"><i class="fa-solid fa-envelope-circle-check"></i><span>Confirmation email sent to you</span></div>
+            <div class="cstep"><i class="fa-solid fa-truck-fast"></i><span>CPARS will respond within the hour</span></div>
+            <div class="cstep"><i class="fa-solid fa-microchip"></i><span>Your request is saved on this device for 30 days</span></div>
+          </div>
+
+          <div class="confirm-contact">
+            <p>Need to follow up sooner?</p>
+            <a href="tel:+13522138976" class="btn-primary"><i class="fa-solid fa-phone"></i> Call +1 (352) 213-8976</a>
+            <a href="mailto:arthurwambui08@gmail.com" class="btn-outline-dark"><i class="fa-solid fa-envelope"></i> Email Us</a>
+          </div>
+
+          <button class="new-request-btn" onclick="resetForm()">
+            <i class="fa-solid fa-rotate-left"></i> Submit Another Request
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
