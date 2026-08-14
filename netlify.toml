@@ -4,9 +4,3 @@
 
 [functions]
   node_bundler = "esbuild"
-
-[build.processing]
-  skip_processing = false
-
-[build.environment]
-  SECRETS_SCAN_ENABLED = "false"

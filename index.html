@@ -216,15 +216,25 @@
     }
 
     /* ══════════════════════════════
-       EMAILJS INIT
+       CONFIG + INIT
     ══════════════════════════════ */
-    emailjs.init('DldH7Aq8SATVGrnE1');
-
-    /* ══════════════════════════════
-       STRIPE INIT
-    ══════════════════════════════ */
-    const stripe = Stripe('pk_live_51U4TwGB59zux9EWHnbxB7kxVFx5Bgks7VbLWcjud69LQoY4QSJBZmkuRh0HHaUHD6OuYIG1PUhoJnTKHVYB7kIDz00P7cgKqMI');
+    let stripe, EMAILJS_SERVICE, EMAILJS_CLIENT_TPL, EMAILJS_OWNER_TPL;
     let stripeElements, stripeCardElement, selectedRate = null, currentRef = null, currentFormData = null;
+
+    async function initServices() {
+      try {
+        const res  = await fetch('/.netlify/functions/config');
+        const cfg  = await res.json();
+        emailjs.init(cfg.emailjsPublicKey);
+        EMAILJS_SERVICE    = cfg.emailjsServiceId;
+        EMAILJS_CLIENT_TPL = cfg.emailjsClientTemplate;
+        EMAILJS_OWNER_TPL  = cfg.emailjsOwnerTemplate;
+        stripe = Stripe(cfg.stripeKey);
+      } catch(e) {
+        console.error('Config load failed', e);
+      }
+    }
+    initServices();
 
     /* ══════════════════════════════
        STEP 1 — FETCH QUOTES
@@ -357,51 +367,62 @@
       showQuotes(rates);
     }
 
+    /* Carrier logo map — real brand SVGs via CDN */
+    const CARRIER_LOGOS = {
+      ups:           'https://upload.wikimedia.org/wikipedia/commons/1/1b/UPS_Logo_Shield_2017.svg',
+      fedex_walleted:'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg',
+      stamps_com:    'https://upload.wikimedia.org/wikipedia/commons/4/48/USPS_Logo.svg',
+      globalpost:    'https://upload.wikimedia.org/wikipedia/commons/4/48/USPS_Logo.svg',
+      default:       ''
+    };
+
     function showQuotes(rates) {
-      const list = document.getElementById('quotesList');
+      const list   = document.getElementById('quotesList');
       const weight = parseFloat(currentFormData.weight) || 0;
 
-      // Weight alert banner if over 150lbs
       const weightAlert = weight > 150
-        ? `<div class="weight-alert"><i class="fa-solid fa-triangle-exclamation"></i> Your cargo weight (${weight} lbs) exceeds parcel carrier limits (150 lbs max). Showing estimated freight rates — final price confirmed by CPARS team.</div>`
+        ? `<div class="weight-alert"><i class="fa-solid fa-triangle-exclamation"></i><span>Your cargo weight (${weight} lbs) exceeds parcel carrier limits (150 lbs max per package). Showing estimated freight rates — a CPARS team member will confirm the final price within the hour.</span></div>`
         : '';
 
       list.innerHTML = weightAlert + rates.map((r, i) => {
-        const tags   = r.tags || [];
+        const tags      = r.tags || [];
         const isBest    = tags.includes('best_value') || tags.includes('cheapest');
-        const isFastest = tags.includes('fastest');
-        const badge  = isBest ? '<span class="quote-badge badge-best">Best Value</span>'
-                     : isFastest ? '<span class="quote-badge badge-fast">Fastest</span>' : '';
+        const isFastest = tags.includes('fastest') && !isBest;
+        const badge     = isBest    ? '<span class="quote-badge badge-best"><i class="fa-solid fa-star"></i> Best Value</span>'
+                        : isFastest ? '<span class="quote-badge badge-fast"><i class="fa-solid fa-bolt"></i> Fastest</span>' : '';
+
+        const logoUrl   = CARRIER_LOGOS[r.carrier_code] || CARRIER_LOGOS.default;
+        const logoHtml  = logoUrl
+          ? `<img src="${logoUrl}" alt="${r.carrier}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><i class="fa-solid fa-truck" style="display:none;font-size:1.6rem;color:#1a56db"></i>`
+          : `<i class="fa-solid fa-truck" style="font-size:1.6rem;color:#1a56db"></i>`;
+
         const deliveryLabel = r.delivery_label || (r.delivery_days ? `${r.delivery_days} business day(s)` : 'Contact for ETA');
-        const carrierIcon = r.carrier_code === 'ups' ? 'fa-truck-fast'
-                          : r.carrier_code === 'fedex_walleted' ? 'fa-box'
-                          : r.carrier_code === 'stamps_com' ? 'fa-envelope'
-                          : 'fa-truck';
+
+        const tagHtml = [
+          `<span class="qtag qtag-delivery"><i class="fa-solid fa-clock"></i> ${deliveryLabel}</span>`,
+          r.guaranteed ? `<span class="qtag qtag-guaranteed"><i class="fa-solid fa-shield-halved"></i> Guaranteed</span>` : '',
+          r.trackable  ? `<span class="qtag qtag-trackable"><i class="fa-solid fa-location-dot"></i> Trackable</span>` : '',
+          r.estimated  ? `<span class="qtag qtag-estimated"><i class="fa-solid fa-circle-info"></i> Estimated</span>` : ''
+        ].filter(Boolean).join('');
+
         return `
           <div class="quote-card ${isBest ? 'quote-best' : ''}" onclick="selectQuote(${i})" id="quote-${i}">
             ${badge}
-            <div class="quote-carrier">
-              <i class="fa-solid ${carrierIcon}"></i>
-              <div>
-                <strong>${r.carrier}</strong>
-                <span>${r.service}</span>
-              </div>
-            </div>
-            <div class="quote-details">
-              <div class="quote-delivery"><i class="fa-solid fa-clock"></i> ${deliveryLabel}</div>
-              ${r.guaranteed ? '<div class="quote-guaranteed"><i class="fa-solid fa-shield-check"></i> Guaranteed</div>' : ''}
-              ${r.trackable  ? '<div class="quote-track"><i class="fa-solid fa-location-dot"></i> Trackable</div>' : ''}
-              ${r.estimated  ? '<div class="quote-est"><i class="fa-solid fa-info-circle"></i> Estimated rate — confirmed by team</div>' : ''}
+            <div class="quote-logo-box">${logoHtml}</div>
+            <div class="quote-carrier-info">
+              <strong>${r.carrier}</strong>
+              <span>${r.service}</span>
             </div>
             <div class="quote-price">$${r.cpars_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div class="quote-tags">${tagHtml}</div>
             <button class="btn-primary quote-select-btn">Select This Rate <i class="fa-solid fa-arrow-right"></i></button>
           </div>
         `;
       }).join('');
 
       window._currentRates = rates;
-      document.getElementById('quoteForm').style.display    = 'none';
-      document.getElementById('quotesPanel').style.display  = 'block';
+      document.getElementById('quoteForm').style.display   = 'none';
+      document.getElementById('quotesPanel').style.display = 'block';
       document.getElementById('quotesPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -514,7 +535,7 @@
 
           // Send emails via EmailJS
           const submittedAt = new Date().toLocaleString();
-          await emailjs.send('service_sdz9x0k', 'template_7a3ti9f', {
+          await emailjs.send(EMAILJS_SERVICE, EMAILJS_CLIENT_TPL, {
             name:             currentFormData.name,
             email:            currentFormData.email,
             reference_number: currentRef,
@@ -527,7 +548,7 @@
             tracking_number:  trackingNumber || 'Will be provided by carrier'
           });
 
-          await emailjs.send('service_sdz9x0k', 'template_gi0wm7e', {
+          await emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
             name:             currentFormData.name,
             email:            currentFormData.email,
             phone:            currentFormData.phone,
