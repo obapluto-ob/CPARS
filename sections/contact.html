@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════
-     CONTACT SECTION — HTML only
-     All JavaScript is in index.html
+     CONTACT SECTION
+     JS lives in index.html
 ═══════════════════════════════ -->
 
 <!-- RETURNING USER BANNER -->
@@ -25,8 +25,8 @@
 
     <div class="section-header">
       <span class="tag">Contact Us</span>
-      <h2>Get Your Free Quote Today</h2>
-      <p>Fill out the form below. We'll review your request and respond within the hour during business hours.</p>
+      <h2>Get Your Instant Freight Quote</h2>
+      <p>Fill out the form below and get real carrier rates instantly. Pick your quote and pay securely online.</p>
     </div>
 
     <div class="contact-inner">
@@ -40,7 +40,7 @@
           </div>
           <div class="contact-item">
             <i class="fa-solid fa-envelope"></i>
-            <div><strong>Email</strong><span>arthurwambui08@gmail.com</span></div>
+            <div><strong>Email</strong><span>cparstransportation@cparstransportationcom.com</span></div>
           </div>
           <div class="contact-item">
             <i class="fa-solid fa-globe"></i>
@@ -60,50 +60,52 @@
           <h4><i class="fa-solid fa-circle-info"></i> How It Works</h4>
           <div class="step">
             <span class="step-num">1</span>
-            <div><strong>Submit your request</strong><p>Fill out the form — takes 60 seconds.</p></div>
+            <div><strong>Fill your shipment details</strong><p>Enter pickup, destination, weight and service type.</p></div>
           </div>
           <div class="step">
             <span class="step-num">2</span>
-            <div><strong>Get your reference</strong><p>A unique reference number is saved to your device and emailed to you automatically.</p></div>
+            <div><strong>Get instant quotes</strong><p>Real carrier rates appear instantly — compare and pick the best one.</p></div>
           </div>
           <div class="step">
             <span class="step-num">3</span>
-            <div><strong>We respond fast</strong><p>CPARS replies to your email directly — usually within the hour.</p></div>
+            <div><strong>Pay securely online</strong><p>Pay with card — your shipment is booked automatically.</p></div>
           </div>
           <div class="step">
             <span class="step-num">4</span>
-            <div><strong>Come back anytime</strong><p>Even if you close this page, your request is remembered on this device for 30 days.</p></div>
+            <div><strong>Get your tracking number</strong><p>Tracking number emailed to you instantly after booking.</p></div>
           </div>
         </div>
       </div>
 
-      <!-- RIGHT: Form / Confirmation -->
+      <!-- RIGHT: Form / Quotes / Payment / Confirmation -->
       <div class="contact-form-wrap">
 
-        <!-- FORM -->
-        <form id="quoteForm" class="contact-form" onsubmit="return submitQuote(event)">
+        <!-- STEP 1: FORM -->
+        <form id="quoteForm" class="contact-form" onsubmit="return fetchQuotes(event)">
           <div class="form-label-row">
-            <h3>Request a Quote</h3>
-            <span class="form-secure"><i class="fa-solid fa-lock"></i> Secure & Remembered</span>
+            <h3>Request Instant Quote</h3>
+            <span class="form-secure"><i class="fa-solid fa-lock"></i> Secure & Instant</span>
           </div>
+
           <div class="form-row">
             <div class="input-group">
               <label>Full Name <span class="req">*</span></label>
-              <input type="text" name="name" id="f-name" placeholder="John Smith"/>
+              <input type="text" id="f-name" placeholder="John Smith"/>
             </div>
             <div class="input-group">
               <label>Email Address <span class="req">*</span></label>
-              <input type="email" name="email" id="f-email" placeholder="you@email.com"/>
+              <input type="email" id="f-email" placeholder="you@email.com"/>
             </div>
           </div>
+
           <div class="form-row">
             <div class="input-group">
               <label>Phone Number <span class="req">*</span></label>
-              <input type="tel" name="phone" id="f-phone" placeholder="+1 (000) 000-0000"/>
+              <input type="tel" id="f-phone" placeholder="+1 (000) 000-0000"/>
             </div>
             <div class="input-group">
               <label>Service Type <span class="req">*</span></label>
-              <select name="service" id="f-service">
+              <select id="f-service">
                 <option value="">Select a service</option>
                 <option>Full Truckload (FTL)</option>
                 <option>Less Than Truckload (LTL)</option>
@@ -115,34 +117,75 @@
               </select>
             </div>
           </div>
+
           <div class="form-row">
             <div class="input-group">
-              <label>Pickup Location <span class="req">*</span></label>
-              <input type="text" name="origin" id="f-origin" placeholder="City, State"/>
+              <label>Pickup ZIP Code <span class="req">*</span></label>
+              <input type="text" id="f-origin" placeholder="e.g. 77090"/>
             </div>
             <div class="input-group">
-              <label>Delivery Destination <span class="req">*</span></label>
-              <input type="text" name="destination" id="f-destination" placeholder="City, State"/>
+              <label>Destination ZIP Code <span class="req">*</span></label>
+              <input type="text" id="f-destination" placeholder="e.g. 75201"/>
             </div>
           </div>
+
+          <div class="form-row">
+            <div class="input-group">
+              <label>Cargo Weight (lbs) <span class="req">*</span></label>
+              <input type="number" id="f-weight" placeholder="e.g. 500" min="1"/>
+            </div>
+            <div class="input-group">
+              <label>Number of Pieces</label>
+              <input type="number" id="f-pieces" placeholder="e.g. 10" min="1"/>
+            </div>
+          </div>
+
           <div class="input-group">
             <label>Shipment Details <span class="req">*</span></label>
-            <textarea name="message" id="f-message" placeholder="Describe your load — cargo type, weight, dimensions, timeline..." rows="4"></textarea>
+            <textarea id="f-message" placeholder="Describe your load — cargo type, dimensions, timeline..." rows="3"></textarea>
           </div>
-          <input type="hidden" name="_subject"         id="f-subject"  value="New Quote Request — CPARS Transportation"/>
-          <input type="hidden" name="reference_number" id="f-ref"/>
-          <input type="hidden" name="_replyto"         id="f-replyto"/>
+
           <button type="submit" class="btn-primary btn-full" id="submitBtn">
-            <i class="fa-solid fa-paper-plane"></i> Send Quote Request
+            <i class="fa-solid fa-magnifying-glass-dollar"></i> Get Instant Quotes
           </button>
           <p class="form-note" id="formNote"></p>
         </form>
 
-        <!-- CONFIRMATION PANEL -->
+        <!-- STEP 2: QUOTES PANEL -->
+        <div id="quotesPanel" style="display:none;" class="quotes-panel">
+          <div class="quotes-header">
+            <h3><i class="fa-solid fa-tags"></i> Available Carrier Quotes</h3>
+            <p>Select the best rate for your shipment</p>
+          </div>
+          <div id="quotesList" class="quotes-list"></div>
+          <button class="btn-outline-dark" onclick="backToForm()" style="margin-top:16px;">
+            <i class="fa-solid fa-arrow-left"></i> Edit Shipment Details
+          </button>
+        </div>
+
+        <!-- STEP 3: PAYMENT PANEL -->
+        <div id="paymentPanel" style="display:none;" class="payment-panel">
+          <div class="payment-header">
+            <h3><i class="fa-solid fa-credit-card"></i> Secure Payment</h3>
+            <div id="paymentSummary" class="payment-summary"></div>
+          </div>
+          <div id="paymentForm">
+            <div id="stripe-card-element" class="stripe-card-element"></div>
+            <p id="card-errors" class="card-errors"></p>
+            <button class="btn-primary btn-full" id="payBtn" onclick="processPayment()">
+              <i class="fa-solid fa-lock"></i> Pay & Book Shipment
+            </button>
+          </div>
+          <button class="btn-outline-dark" onclick="backToQuotes()" style="margin-top:12px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Quotes
+          </button>
+        </div>
+
+        <!-- STEP 4: CONFIRMATION PANEL -->
         <div id="confirmationPanel" class="confirmation-panel" style="display:none;">
           <div class="confirm-icon"><i class="fa-solid fa-circle-check"></i></div>
-          <h3>Request Sent Successfully!</h3>
-          <p>Your quote request has been received. A confirmation was sent to your email and saved on this device.</p>
+          <h3>Shipment Booked Successfully!</h3>
+          <p>Your shipment has been booked and paid. A confirmation with your tracking number has been sent to your email.</p>
 
           <div class="ref-box">
             <span class="ref-label">Your Reference Number</span>
@@ -150,27 +193,28 @@
             <button class="copy-btn" onclick="copyRef()"><i class="fa-solid fa-copy"></i> Copy</button>
           </div>
 
-          <div class="memory-note">
-            <i class="fa-solid fa-microchip"></i>
-            <span>Saved on your device for 30 days — you'll see this automatically if you return.</span>
+          <div class="ref-box" id="trackingBox" style="display:none;">
+            <span class="ref-label">Tracking Number</span>
+            <span class="ref-number" id="displayTracking">—</span>
+            <button class="copy-btn" onclick="copyTracking()"><i class="fa-solid fa-copy"></i> Copy</button>
           </div>
 
           <div class="confirm-details" id="confirmDetails"></div>
 
           <div class="confirm-steps">
             <div class="cstep"><i class="fa-solid fa-envelope-circle-check"></i><span>Confirmation email sent to you</span></div>
-            <div class="cstep"><i class="fa-solid fa-truck-fast"></i><span>CPARS will respond within the hour</span></div>
-            <div class="cstep"><i class="fa-solid fa-microchip"></i><span>Your request is saved on this device for 30 days</span></div>
+            <div class="cstep"><i class="fa-solid fa-truck-fast"></i><span>Shipment booked with carrier automatically</span></div>
+            <div class="cstep"><i class="fa-solid fa-location-dot"></i><span>Track your shipment with the tracking number above</span></div>
           </div>
 
           <div class="confirm-contact">
-            <p>Need to follow up sooner?</p>
+            <p>Need help with your shipment?</p>
             <a href="tel:+13522138976" class="btn-primary"><i class="fa-solid fa-phone"></i> Call +1 (352) 213-8976</a>
-            <a href="mailto:arthurwambui08@gmail.com" class="btn-outline-dark"><i class="fa-solid fa-envelope"></i> Email Us</a>
+            <a href="mailto:cparstransportation@cparstransportationcom.com" class="btn-outline-dark"><i class="fa-solid fa-envelope"></i> Email Us</a>
           </div>
 
           <button class="new-request-btn" onclick="resetForm()">
-            <i class="fa-solid fa-rotate-left"></i> Submit Another Request
+            <i class="fa-solid fa-rotate-left"></i> Book Another Shipment
           </button>
         </div>
 

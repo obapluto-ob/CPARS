@@ -426,3 +426,192 @@
   .toc-card        { flex-wrap: wrap; }
   .how-it-works    { padding: 16px; }
 }
+
+/* ═══════════════════════════════
+   QUOTES PANEL
+═══════════════════════════════ */
+.quotes-panel, .payment-panel {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+.quotes-header, .payment-header {
+  margin-bottom: 20px;
+}
+
+.quotes-header h3, .payment-header h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.quotes-header p {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.quotes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quote-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  background: #f8fafc;
+}
+
+.quote-card:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.quote-card.quote-best {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.quote-card.quote-selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.quote-badge {
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  background: #10b981;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quote-carrier {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.quote-carrier i {
+  font-size: 1.4rem;
+  color: #3b82f6;
+}
+
+.quote-carrier strong {
+  display: block;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.quote-carrier span {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.quote-details {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.quote-est {
+  color: #f59e0b;
+}
+
+.quote-price {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.quote-select-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+/* ═══════════════════════════════
+   PAYMENT PANEL
+═══════════════════════════════ */
+.payment-summary {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.total-row span, .total-row strong {
+  font-size: 1.1rem !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
+}
+
+.stripe-card-element {
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  background: #fff;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.stripe-card-element:focus-within {
+  border-color: #3b82f6;
+}
+
+.card-errors {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  min-height: 20px;
+}
+
+/* ═══════════════════════════════
+   WEIGHT ALERT + EXTRA QUOTE STYLES
+═══════════════════════════════ */
+.weight-alert {
+  background: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: #92400e;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.weight-alert i { margin-top: 2px; flex-shrink: 0; }
+
+.badge-best { background: #10b981; }
+.badge-fast { background: #3b82f6; }
+
+.quote-guaranteed {
+  color: #10b981;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.quote-track {
+  color: #3b82f6;
+  font-size: 0.82rem;
+}

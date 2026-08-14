@@ -1,0 +1,8 @@
+{
+  "name": "cpars-transportation",
+  "version": "1.0.0",
+  "description": "CPARS Transportation LLC — Freight Booking System",
+  "dependencies": {
+    "stripe": "^14.0.0"
+  }
+}
