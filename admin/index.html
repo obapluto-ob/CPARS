@@ -8,153 +8,11 @@
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-
-    /* LOGIN */
-    #loginScreen {
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-    }
-    .login-box {
-      background: #1e293b; border: 1px solid #334155;
-      border-radius: 20px; padding: 48px 40px; width: 100%; max-width: 400px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
-    }
-    .login-logo { text-align: center; margin-bottom: 32px; }
-    .login-logo i { font-size: 2.5rem; color: #3b82f6; }
-    .login-logo h1 { font-size: 1.4rem; font-weight: 800; color: #f1f5f9; margin-top: 10px; }
-    .login-logo p  { font-size: 0.82rem; color: #64748b; margin-top: 4px; }
-    .login-field { margin-bottom: 16px; }
-    .login-field label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
-    .login-field input {
-      width: 100%; padding: 12px 14px; background: #0f172a;
-      border: 1.5px solid #334155; border-radius: 10px;
-      color: #f1f5f9; font-size: 0.95rem; outline: none;
-      transition: border-color 0.2s;
-    }
-    .login-field input:focus { border-color: #3b82f6; }
-    .login-btn {
-      width: 100%; padding: 13px; background: #1a56db;
-      color: #fff; border: none; border-radius: 10px;
-      font-size: 0.95rem; font-weight: 700; cursor: pointer;
-      margin-top: 8px; transition: background 0.2s;
-    }
-    .login-btn:hover { background: #1d4ed8; }
-    .login-error { color: #f87171; font-size: 0.82rem; margin-top: 10px; text-align: center; }
-
-    /* DASHBOARD */
-    #dashboard { display: none; }
-    .topbar {
-      background: #1e293b; border-bottom: 1px solid #334155;
-      padding: 14px 28px; display: flex; align-items: center;
-      justify-content: space-between;
-    }
-    .topbar-brand { display: flex; align-items: center; gap: 10px; }
-    .topbar-brand i { color: #3b82f6; font-size: 1.3rem; }
-    .topbar-brand span { font-weight: 800; font-size: 1rem; color: #f1f5f9; }
-    .topbar-right { display: flex; align-items: center; gap: 16px; }
-    .topbar-badge {
-      background: #10b981; color: #fff;
-      font-size: 0.72rem; font-weight: 700;
-      padding: 3px 10px; border-radius: 20px;
-    }
-    .logout-btn {
-      background: #334155; color: #94a3b8; border: none;
-      padding: 7px 14px; border-radius: 8px; font-size: 0.82rem;
-      cursor: pointer; transition: background 0.2s;
-    }
-    .logout-btn:hover { background: #475569; color: #f1f5f9; }
-
-    .dashboard-body { padding: 28px; max-width: 1200px; margin: 0 auto; }
-
-    /* Stats */
-    .stats-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 16px; margin-bottom: 28px;
-    }
-    .stat-card {
-      background: #1e293b; border: 1px solid #334155;
-      border-radius: 14px; padding: 20px 22px;
-    }
-    .stat-card .stat-label { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-    .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: #f1f5f9; }
-    .stat-card .stat-sub   { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
-    .stat-card.green .stat-value { color: #10b981; }
-    .stat-card.blue  .stat-value { color: #3b82f6; }
-    .stat-card.yellow .stat-value { color: #fbbf24; }
-
-    /* Shipments Table */
-    .section-title {
-      font-size: 1rem; font-weight: 700; color: #f1f5f9;
-      margin-bottom: 16px; display: flex; align-items: center;
-      justify-content: space-between;
-    }
-    .table-wrap {
-      background: #1e293b; border: 1px solid #334155;
-      border-radius: 14px; overflow: hidden; margin-bottom: 28px;
-    }
-    table { width: 100%; border-collapse: collapse; }
-    thead { background: #0f172a; }
-    th {
-      padding: 12px 16px; text-align: left;
-      font-size: 0.72rem; font-weight: 700;
-      color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    td { padding: 14px 16px; font-size: 0.85rem; color: #cbd5e1; border-top: 1px solid #334155; }
-    tr:hover td { background: #263348; }
-    .status-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 3px 10px; border-radius: 20px;
-      font-size: 0.72rem; font-weight: 700;
-    }
-    .status-pending   { background: #fef3c7; color: #92400e; }
-    .status-booked    { background: #dbeafe; color: #1e40af; }
-    .status-transit   { background: #e0e7ff; color: #3730a3; }
-    .status-delivered { background: #dcfce7; color: #166534; }
-
-    .action-btn {
-      background: #334155; color: #94a3b8; border: none;
-      padding: 5px 12px; border-radius: 6px; font-size: 0.75rem;
-      cursor: pointer; transition: background 0.2s; margin-right: 4px;
-    }
-    .action-btn:hover { background: #1a56db; color: #fff; }
-    .action-btn.danger:hover { background: #dc2626; color: #fff; }
-
-    /* Stripe + ShipStation links */
-    .quick-links {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px;
-    }
-    .quick-link {
-      background: #1e293b; border: 1px solid #334155;
-      border-radius: 12px; padding: 18px 20px;
-      display: flex; align-items: center; gap: 14px;
-      text-decoration: none; color: #cbd5e1;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .quick-link:hover { border-color: #3b82f6; background: #1e3a5f; }
-    .quick-link i { font-size: 1.4rem; color: #3b82f6; }
-    .quick-link strong { display: block; font-size: 0.9rem; color: #f1f5f9; }
-    .quick-link span   { font-size: 0.78rem; color: #64748b; }
-
-    .empty-state {
-      text-align: center; padding: 48px 20px; color: #475569;
-    }
-    .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
-
-    @media (max-width: 768px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .quick-links { grid-template-columns: 1fr; }
-      .dashboard-body { padding: 16px; }
-      table { font-size: 0.78rem; }
-      th, td { padding: 10px 12px; }
-    }
-  </style>
+  <link rel="stylesheet" href="admin.css"/>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">
@@ -169,6 +27,10 @@
     <div class="login-field">
       <label>Password</label>
       <input type="password" id="adminPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="login-field">
+      <label>Admin Secret <span style="color:#64748b;font-weight:400">(for booking actions)</span></label>
+      <input type="password" id="adminSecret" placeholder="Your ADMIN_SECRET value"/>
     </div>
     <button class="login-btn" onclick="doLogin()">
       <i class="fa-solid fa-lock-open"></i> Access Dashboard
@@ -197,47 +59,57 @@
       <div class="stat-card green">
         <div class="stat-label">Total Revenue</div>
         <div class="stat-value" id="statRevenue">$0.00</div>
-        <div class="stat-sub">All time</div>
+        <div class="stat-sub">Confirmed payments</div>
       </div>
       <div class="stat-card blue">
-        <div class="stat-label">Total Shipments</div>
+        <div class="stat-label">Total Orders</div>
         <div class="stat-value" id="statTotal">0</div>
-        <div class="stat-sub">All bookings</div>
+        <div class="stat-sub">All time</div>
       </div>
       <div class="stat-card yellow">
-        <div class="stat-label">Pending</div>
-        <div class="stat-value" id="statPending">0</div>
-        <div class="stat-sub">Awaiting action</div>
+        <div class="stat-label">Paid</div>
+        <div class="stat-value" id="statPaid">0</div>
+        <div class="stat-sub">Succeeded payments</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Delivered</div>
-        <div class="stat-value" id="statDelivered">0</div>
-        <div class="stat-sub">Completed</div>
+      <div class="stat-card red">
+        <div class="stat-label">Failed</div>
+        <div class="stat-value" id="statFailed">0</div>
+        <div class="stat-sub">Canceled / failed</div>
       </div>
     </div>
 
-    <!-- Quick Links -->
+    <!-- Quick Access -->
     <div class="section-title">Quick Access</div>
     <div class="quick-links">
-      <a href="https://dashboard.stripe.com/payments" target="_blank" class="quick-link">
+      <a href="https://dashboard.stripe.com/payments" class="quick-link">
         <i class="fa-brands fa-stripe-s"></i>
         <div><strong>Stripe Payments</strong><span>View all payments & payouts</span></div>
       </a>
-      <a href="https://app.shipstation.com" target="_blank" class="quick-link">
+      <a href="https://app.shipstation.com" class="quick-link">
         <i class="fa-solid fa-box"></i>
         <div><strong>ShipStation</strong><span>Manage shipments & labels</span></div>
       </a>
-      <a href="https://dashboard.emailjs.com" target="_blank" class="quick-link">
+      <a href="https://dashboard.emailjs.com" class="quick-link">
         <i class="fa-solid fa-envelope"></i>
         <div><strong>EmailJS</strong><span>Email logs & templates</span></div>
       </a>
     </div>
 
-    <!-- Shipments Table -->
+    <!-- Activity Log -->
     <div class="section-title">
-      <span><i class="fa-solid fa-list"></i> Shipment Log</span>
-      <button class="action-btn" onclick="loadShipments()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      <span><i class="fa-solid fa-list"></i> Live Activity — Stripe Orders</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="action-btn retry" onclick="openRetryModal(null)">
+          <i class="fa-solid fa-rotate"></i> Manual Retry Booking
+        </button>
+        <button class="action-btn" onclick="loadActivity()">
+          <i class="fa-solid fa-rotate"></i> Refresh
+        </button>
+      </div>
     </div>
+
+    <div id="activityError" class="activity-error" style="display:none;"></div>
+
     <div class="table-wrap">
       <table>
         <thead>
@@ -245,16 +117,16 @@
             <th>Reference</th>
             <th>Client</th>
             <th>Route</th>
-            <th>Service</th>
-            <th>Carrier</th>
+            <th>Carrier / Service</th>
+            <th>Weight</th>
             <th>Amount</th>
-            <th>Status</th>
+            <th>Payment</th>
             <th>Date</th>
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="shipmentsBody">
-          <tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-inbox"></i>No shipments yet</div></td></tr>
+        <tbody id="activityBody">
+          <tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -262,108 +134,96 @@
   </div>
 </div>
 
-<script>
-  // ── Credentials (change these to your own) ──
-  const ADMIN_USER = 'cpars_admin';
-  const ADMIN_PASS = 'CPARS@2025!secure';
-  const SESSION_KEY = 'cpars_admin_session';
+<!-- Retry Booking Modal -->
+<div class="modal-overlay" id="retryModal">
+  <div class="modal-box">
+    <h3><i class="fa-solid fa-rotate" style="color:#7c3aed"></i> Retry / Manual Booking</h3>
 
-  function doLogin() {
-    const u = document.getElementById('adminUser').value.trim();
-    const p = document.getElementById('adminPass').value.trim();
-    if (u === ADMIN_USER && p === ADMIN_PASS) {
-      sessionStorage.setItem(SESSION_KEY, 'true');
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('dashboard').style.display   = 'block';
-      loadShipments();
-    } else {
-      document.getElementById('loginError').textContent = 'Invalid credentials. Try again.';
-      document.getElementById('adminPass').value = '';
-    }
-  }
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Reference Number</label>
+        <input type="text" id="r-ref" placeholder="CPARS-XXXXXXXX"/>
+      </div>
+      <div class="modal-field">
+        <label>Client Name</label>
+        <input type="text" id="r-name" placeholder="John Smith"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Client Email</label>
+        <input type="email" id="r-email" placeholder="client@email.com"/>
+      </div>
+      <div class="modal-field">
+        <label>Client Phone</label>
+        <input type="text" id="r-phone" placeholder="+1 (000) 000-0000"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Origin ZIP</label>
+        <input type="text" id="r-origin-zip" placeholder="77090"/>
+      </div>
+      <div class="modal-field">
+        <label>Origin Street</label>
+        <input type="text" id="r-origin-street" placeholder="555 Butterfield Rd"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Origin City</label>
+        <input type="text" id="r-origin-city" placeholder="Houston"/>
+      </div>
+      <div class="modal-field">
+        <label>Destination ZIP</label>
+        <input type="text" id="r-dest-zip" placeholder="75201"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Destination Street</label>
+        <input type="text" id="r-dest-street" placeholder="123 Main St"/>
+      </div>
+      <div class="modal-field">
+        <label>Destination City</label>
+        <input type="text" id="r-dest-city" placeholder="Dallas"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Weight</label>
+        <input type="number" id="r-weight" placeholder="50" min="0.1" step="0.1"/>
+      </div>
+      <div class="modal-field">
+        <label>Weight Unit</label>
+        <select id="r-weight-unit">
+          <option value="lbs">lbs</option>
+          <option value="kg">kg</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Carrier Code <span style="color:#64748b;font-weight:400">(optional)</span></label>
+        <input type="text" id="r-carrier-code" placeholder="ups / fedex_walleted / stamps_com"/>
+      </div>
+      <div class="modal-field">
+        <label>Service Code <span style="color:#64748b;font-weight:400">(optional)</span></label>
+        <input type="text" id="r-service-code" placeholder="ups_ground"/>
+      </div>
+    </div>
 
-  function doLogout() {
-    sessionStorage.removeItem(SESSION_KEY);
-    location.reload();
-  }
+    <div class="modal-result" id="retryResult"></div>
 
-  // Auto-login if session exists
-  if (sessionStorage.getItem(SESSION_KEY)) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('dashboard').style.display   = 'block';
-  }
+    <div class="modal-btns">
+      <button class="btn-purple" id="retrySubmitBtn" onclick="submitRetry()">
+        <i class="fa-solid fa-rotate"></i> Retry Booking
+      </button>
+      <button class="btn-cancel" onclick="closeRetryModal()">Cancel</button>
+    </div>
+  </div>
+</div>
 
-  // ── Load shipments from localStorage (same data client saves) ──
-  function loadShipments() {
-    const all = getAllShipments();
-    const tbody = document.getElementById('shipmentsBody');
-
-    // Update stats
-    const revenue   = all.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-    const pending   = all.filter(r => !r.status || r.status === 'pending').length;
-    const delivered = all.filter(r => r.status === 'delivered').length;
-    document.getElementById('statRevenue').textContent  = '$' + revenue.toFixed(2);
-    document.getElementById('statTotal').textContent    = all.length;
-    document.getElementById('statPending').textContent  = pending;
-    document.getElementById('statDelivered').textContent = delivered;
-
-    if (all.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-inbox"></i>No shipments yet — they will appear here after clients book</div></td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = all.reverse().map((r, i) => {
-      const status = r.status || 'pending';
-      const statusClass = { pending: 'status-pending', booked: 'status-booked', transit: 'status-transit', delivered: 'status-delivered' }[status] || 'status-pending';
-      const statusLabel = { pending: 'Pending', booked: 'Booked', transit: 'In Transit', delivered: 'Delivered' }[status] || 'Pending';
-      return `
-        <tr>
-          <td><code style="font-size:0.78rem;color:#60a5fa">${r.ref || '—'}</code></td>
-          <td>
-            <div style="font-weight:600;color:#f1f5f9">${r.name || '—'}</div>
-            <div style="font-size:0.75rem;color:#64748b">${r.email || ''}</div>
-          </td>
-          <td>
-            <div style="font-size:0.78rem">${r.originFull || r.origin || '—'}</div>
-            <div style="font-size:0.78rem;color:#64748b">→ ${r.destFull || r.destination || '—'}</div>
-          </td>
-          <td>${r.service || '—'}</td>
-          <td>${r.carrier || '—'}</td>
-          <td style="font-weight:700;color:#10b981">$${parseFloat(r.amount || 0).toFixed(2)}</td>
-          <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-          <td style="font-size:0.78rem;color:#64748b">${r.submittedAt || '—'}</td>
-          <td>
-            <select class="action-btn" onchange="updateStatus(${all.length - 1 - i}, this.value)" style="padding:5px 8px">
-              <option value="">Update Status</option>
-              <option value="pending">Pending</option>
-              <option value="booked">Booked</option>
-              <option value="transit">In Transit</option>
-              <option value="delivered">Delivered</option>
-            </select>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  function getAllShipments() {
-    try {
-      const raw = localStorage.getItem('cpars_all_shipments');
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
-  }
-
-  function updateStatus(index, status) {
-    if (!status) return;
-    const all = getAllShipments();
-    if (all[index]) {
-      all[index].status = status;
-      localStorage.setItem('cpars_all_shipments', JSON.stringify(all));
-      loadShipments();
-    }
-  }
-
-  loadShipments();
-</script>
+<script src="admin.js"></script>
 </body>
 </html>
