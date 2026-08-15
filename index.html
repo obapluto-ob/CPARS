@@ -619,7 +619,6 @@
             submitted_at:     new Date().toLocaleString(),
             carrier:          selectedRate.carrier,
             amount:           '$' + selectedRate.cpars_price.toFixed(2),
-            weight:           currentFormData.weightDisplay,
             tracking_number:  'N/A',
             status:           'FAILED'
           }).catch(() => {});
@@ -655,7 +654,11 @@
                 email:           currentFormData.email,
                 phone:           currentFormData.phone,
                 origin_zip:      currentFormData.origin,
+                origin_street:   currentFormData.originStreet,
+                origin_city:     currentFormData.originCity,
                 destination_zip: currentFormData.destination,
+                dest_street:     currentFormData.destStreet,
+                dest_city:       currentFormData.destCity,
                 weight:          currentFormData.weight,
                 message:         currentFormData.message
               })
@@ -674,7 +677,7 @@
         const trackingNote   = trackingNumber || (bookingFailed ? 'Booking error — CPARS will contact you within 1 hour' : 'Will be provided by carrier');
         const ownerBookNote  = trackingNumber || (bookingFailed ? 'BOOKING FAILED AFTER PAYMENT — manual action required' : 'Pending carrier assignment');
 
-        await emailjs.send(EMAILJS_SERVICE, EMAILJS_CLIENT_TPL, {
+        const emailParams = {
           name:             currentFormData.name,
           email:            currentFormData.email,
           reference_number: currentRef,
@@ -684,27 +687,27 @@
           submitted_at:     submittedAt,
           carrier:          selectedRate.carrier,
           amount:           '$' + selectedRate.cpars_price.toFixed(2),
-          weight:           currentFormData.weightDisplay,
           tracking_number:  trackingNote,
           status:           'CONFIRMED & PAID'
-        });
+        };
 
-        await emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
-          name:             currentFormData.name,
-          email:            currentFormData.email,
-          phone:            currentFormData.phone,
-          reference_number: currentRef,
-          service:          currentFormData.service,
-          origin:           currentFormData.originFull,
-          destination:      currentFormData.destFull,
-          message:          currentFormData.message + (bookingFailed ? '\n\n⚠️ BOOKING FAILED AFTER PAYMENT — manual action required' : ''),
-          submitted_at:     submittedAt,
-          carrier:          selectedRate.carrier,
-          amount:           '$' + selectedRate.cpars_price.toFixed(2),
-          weight:           currentFormData.weightDisplay,
-          tracking_number:  ownerBookNote,
-          status:           bookingFailed ? 'PAID — BOOKING FAILED' : 'CONFIRMED & PAID'
-        });
+        try {
+          await emailjs.send(EMAILJS_SERVICE, EMAILJS_CLIENT_TPL, emailParams);
+        } catch(emailErr) {
+          console.warn('Client email failed:', emailErr);
+        }
+
+        try {
+          await emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
+            ...emailParams,
+            phone:           currentFormData.phone,
+            message:         currentFormData.message + (bookingFailed ? '\n\n⚠️ BOOKING FAILED AFTER PAYMENT — manual action required' : ''),
+            tracking_number: ownerBookNote,
+            status:          bookingFailed ? 'PAID — BOOKING FAILED' : 'CONFIRMED & PAID'
+          });
+        } catch(emailErr) {
+          console.warn('Owner email failed:', emailErr);
+        }
 
         // STEP 6 — Save and show confirmation
         const requestData = {

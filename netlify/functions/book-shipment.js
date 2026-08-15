@@ -18,7 +18,8 @@ exports.handler = async (event) => {
 
   const {
     rate_id, ref, name, email, phone,
-    origin_zip, destination_zip, weight, message
+    origin_zip, destination_zip, weight, message,
+    origin_street, origin_city, dest_street, dest_city
   } = JSON.parse(event.body || '{}');
 
   if (!rate_id || !origin_zip || !destination_zip) {
@@ -37,15 +38,20 @@ exports.handler = async (event) => {
         label_format:        'pdf',
         label_download_type: 'url',
         ship_to: {
-          name:                          name    || 'Client',
-          phone:                         phone   || '',
+          name:                          name         || 'Client',
+          phone:                         phone        || '',
+          address_line1:                 dest_street  || '123 Main St',
+          city_locality:                 dest_city    || '',
           postal_code:                   destination_zip,
           country_code:                  'US',
-          address_residential_indicator: 'no'
+          address_residential_indicator: 'unknown'
         },
         ship_from: {
           name:                          'CPARS Transportation LLC',
           phone:                         '+13522138976',
+          address_line1:                 origin_street || '555 Butterfield Rd',
+          city_locality:                 origin_city   || 'Houston',
+          state_province:                'TX',
           postal_code:                   origin_zip,
           country_code:                  'US',
           address_residential_indicator: 'no'
