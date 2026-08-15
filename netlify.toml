@@ -4,3 +4,7 @@
 
 [functions]
   node_bundler = "esbuild"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "Key,Value,STRIPE_WEBHOOK_SECRET"
+  SECRETS_SCAN_OMIT_PATHS = "netlify/functions/stripe-webhook.js"
