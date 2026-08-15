@@ -678,11 +678,38 @@
 
         if (!selectedRate.estimated) {
           try {
+            // Re-fetch a fresh rate if the original may have expired (ShipStation rates expire ~5 min)
+            let freshRateId = selectedRate.rate_id;
+            try {
+              const freshRes  = await fetch('/.netlify/functions/get-rates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  weight:          currentFormData.weightRaw,
+                  weight_unit:     currentFormData.weightUnit,
+                  origin_zip:      currentFormData.origin,
+                  destination_zip: currentFormData.destination,
+                  service_type:    currentFormData.service
+                })
+              });
+              const freshData = await freshRes.json();
+              if (freshData.rates && freshData.rates.length > 0) {
+                // Match same carrier + service code for fresh rate_id
+                const match = freshData.rates.find(r =>
+                  r.carrier_code === selectedRate.carrier_code &&
+                  r.service_code === selectedRate.service_code
+                ) || freshData.rates.find(r =>
+                  r.carrier === selectedRate.carrier
+                );
+                if (match && match.rate_id) freshRateId = match.rate_id;
+              }
+            } catch { /* keep original rate_id if refresh fails */ }
+
             const bookRes  = await fetch('/.netlify/functions/book-shipment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                rate_id:         selectedRate.rate_id,
+                rate_id:         freshRateId,
                 ref:             currentRef,
                 name:            currentFormData.name,
                 email:           currentFormData.email,

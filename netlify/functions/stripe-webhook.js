@@ -56,10 +56,11 @@ exports.handler = async (event) => {
     case 'payment_intent.succeeded': {
       console.log(`PAYMENT SUCCEEDED | Ref: ${ref} | ${amount} | Carrier: ${carrier} | Service: ${service} | Email: ${email}`);
 
-      // Webhook backup: if frontend email failed, send recovery email to client
       if (email && EMAILJS_SERVICE && EMAILJS_CLIENT && EMAILJS_KEY) {
         const recoveryUrl = `https://cparstransportation.com/?recover=${ref}&email=${encodeURIComponent(email)}&amount=${encodeURIComponent(amount)}`;
-        const result = await sendEmail(EMAILJS_SERVICE, EMAILJS_CLIENT, EMAILJS_KEY, {
+
+        // Always send backup confirmation to client
+        const clientResult = await sendEmail(EMAILJS_SERVICE, EMAILJS_CLIENT, EMAILJS_KEY, {
           name:             data.metadata?.name || 'Valued Customer',
           email,
           reference_number: ref,
@@ -69,26 +70,26 @@ exports.handler = async (event) => {
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
-          tracking_number:  'Being arranged — you will receive an update within 1 hour',
-          status:           'PAYMENT CONFIRMED'
+          tracking_number:  'Being arranged — you will receive tracking within 1 hour',
+          status:           'CONFIRMED & PAID'
         });
-        console.log(`Backup client email sent | Status: ${result.status}`);
+        console.log(`Client backup email | Status: ${clientResult.status} | Ref: ${ref} | To: ${email}`);
 
-        // Also alert owner
+        // Always notify owner with full details
         await sendEmail(EMAILJS_SERVICE, EMAILJS_OWNER, EMAILJS_KEY, {
-          name:             data.metadata?.name || 'Client',
+          name:             data.metadata?.name  || 'Client',
           email,
           phone:            data.metadata?.phone || 'N/A',
           reference_number: ref,
           service,
-          origin:           data.metadata?.origin      || 'On file',
-          destination:      data.metadata?.destination || 'On file',
-          message:          'WEBHOOK BACKUP: Payment confirmed server-side. Recovery URL: ' + recoveryUrl,
+          origin:           data.metadata?.origin      || 'Check Stripe',
+          destination:      data.metadata?.destination || 'Check Stripe',
+          message:          'WEBHOOK CONFIRMED. Recovery URL: ' + recoveryUrl,
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
-          tracking_number:  'Pending booking',
-          status:           'PAYMENT CONFIRMED — NEEDS BOOKING'
+          tracking_number:  'Pending — book manually if not auto-booked',
+          status:           'CONFIRMED & PAID — VERIFY BOOKING'
         }).catch(e => console.warn('Owner backup email failed:', e));
       }
       break;
