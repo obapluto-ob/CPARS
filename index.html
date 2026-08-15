@@ -273,6 +273,36 @@
     }
     initServices();
 
+    // Payment recovery — handle ?recover=REF&email=EMAIL&amount=AMOUNT in URL
+    (function checkRecovery() {
+      const params = new URLSearchParams(window.location.search);
+      const ref    = params.get('recover');
+      const email  = params.get('email');
+      const amount = params.get('amount');
+      if (!ref || !email) return;
+      // Wait for sections to load then show recovery confirmation
+      setTimeout(() => {
+        const contact = document.getElementById('contact');
+        if (contact) contact.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+          document.getElementById('quoteForm').style.display        = 'none';
+          document.getElementById('quotesPanel').style.display      = 'none';
+          document.getElementById('paymentPanel').style.display     = 'none';
+          document.getElementById('confirmationPanel').style.display = 'flex';
+          document.getElementById('displayRef').textContent = ref;
+          document.getElementById('confirmDetails').innerHTML = `
+            <div class="cdetail"><span>Reference</span><strong>${ref}</strong></div>
+            <div class="cdetail"><span>Email</span><strong>${email}</strong></div>
+            <div class="cdetail"><span>Amount Paid</span><strong>${amount || 'On file'}</strong></div>
+            <div class="cdetail"><span>Status</span><strong style="color:#16a34a">✅ Payment Confirmed</strong></div>
+            <div class="cdetail"><span>Booking</span><strong>Being arranged — tracking number will be emailed to you within 1 hour</strong></div>
+          `;
+          // Clean URL without reloading
+          window.history.replaceState({}, '', '/');
+        }, 800);
+      }, 1500);
+    })();
+
     /* ══════════════════════════════
        STEP 1 — FETCH QUOTES
     ══════════════════════════════ */
@@ -578,7 +608,11 @@
               service:             selectedRate.service,
               weight_declared:     currentFormData.weightRaw,
               weight_unit:         currentFormData.weightUnit,
-              weight_buffered_lbs: currentFormData.weight
+              weight_buffered_lbs: currentFormData.weight,
+              name:                currentFormData.name,
+              phone:               currentFormData.phone,
+              origin:              currentFormData.originFull,
+              destination:         currentFormData.destFull
             })
           });
           intentData = await intentRes.json();
