@@ -1,3 +1,5 @@
+const { isRateLimited, rateLimitResponse } = require('./utils/rateLimit');
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -22,14 +24,23 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
-  const { weight, origin_zip, destination_zip } = JSON.parse(event.body || '{}');
+  if (isRateLimited(event)) return rateLimitResponse();
+
+  const { weight, weight_unit, origin_zip, destination_zip } = JSON.parse(event.body || '{}');
+
+  // Convert kg to lbs if needed — 1 kg = 2.20462 lbs
+  const weightInLbs = weight_unit === 'kg'
+    ? parseFloat((parseFloat(weight) * 2.20462).toFixed(2))
+    : parseFloat(weight);
 
   if (!weight || !origin_zip || !destination_zip) {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 
-  const weightNum = parseFloat(weight);
-  const API_KEY   = process.env.SHIPSTATION_API_KEY;
+  // Add 10% weight buffer to protect against client under-declaration
+  const WEIGHT_BUFFER = 1.10;
+  const weightNum     = parseFloat((weightInLbs * WEIGHT_BUFFER).toFixed(2));
+  const API_KEY       = process.env.SHIPSTATION_API_KEY;
 
   // Only query carriers that support this weight
   const eligibleCarriers = CARRIERS.filter(c => weightNum <= c.maxWeight);
@@ -109,7 +120,10 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       rates,
       eligible_carriers: eligibleCarriers.map(c => c.name),
-      weight_used: weightNum
+      weight_used:        weightNum,
+      weight_declared:    parseFloat(weight),
+      weight_unit:        weight_unit || 'lbs',
+      weight_buffered:    true
     })
   };
 };

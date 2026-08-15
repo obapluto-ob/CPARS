@@ -1,3 +1,5 @@
+const { isRateLimited, rateLimitResponse } = require('./utils/rateLimit');
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -11,6 +13,8 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
+
+  if (isRateLimited(event)) return rateLimitResponse();
 
   const {
     rate_id, ref, name, email, phone,

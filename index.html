@@ -173,6 +173,35 @@
     };
 
     /* ══════════════════════════════
+       WEIGHT UNIT TOGGLE
+    ══════════════════════════════ */
+    let currentWeightUnit = 'lbs';
+
+    window.setWeightUnit = (unit) => {
+      currentWeightUnit = unit;
+      document.getElementById('unit-lbs').classList.toggle('active', unit === 'lbs');
+      document.getElementById('unit-kg').classList.toggle('active',  unit === 'kg');
+      const input = document.getElementById('f-weight');
+      const val   = parseFloat(input.value);
+      if (!isNaN(val) && val > 0) {
+        input.value = unit === 'kg'
+          ? parseFloat((val / 2.20462).toFixed(2))
+          : parseFloat((val * 2.20462).toFixed(2));
+      }
+      syncWeightConversion();
+    };
+
+    window.syncWeightConversion = () => {
+      const val  = parseFloat(document.getElementById('f-weight').value);
+      const span = document.getElementById('weight-converted');
+      if (!span) return;
+      if (isNaN(val) || val <= 0) { span.textContent = ''; return; }
+      span.textContent = currentWeightUnit === 'lbs'
+        ? '\u2248 ' + (val / 2.20462).toFixed(2) + ' kg'
+        : '\u2248 ' + (val * 2.20462).toFixed(2) + ' lbs';
+    };
+
+    /* ══════════════════════════════
        CONTACT FORM
     ══════════════════════════════ */
     function initContact() {
@@ -215,7 +244,7 @@
         <div class="cdetail"><span>Service</span><strong>${data.service || '—'}</strong></div>
         <div class="cdetail"><span>Pickup</span><strong>${data.originFull || data.origin || '—'}</strong></div>
         <div class="cdetail"><span>Destination</span><strong>${data.destFull || data.destination || '—'}</strong></div>
-        <div class="cdetail"><span>Weight</span><strong>${data.weight || '—'} lbs</strong></div>
+        <div class="cdetail"><span>Weight</span><strong>${data.weightDisplay || (data.weight + ' lbs') || '—'}</strong></div>
         <div class="cdetail"><span>Carrier</span><strong>${data.carrier || '—'}</strong></div>
         <div class="cdetail"><span>Amount Paid</span><strong>$${data.amount ? data.amount.toFixed(2) : '—'}</strong></div>
         <div class="cdetail"><span>Submitted</span><strong>${data.submittedAt || '—'}</strong></div>
@@ -313,14 +342,22 @@
         destApt:      document.getElementById('f-dest-apt').value.trim(),
         destCity:     document.getElementById('f-dest-city').value.trim(),
         destination:  document.getElementById('f-destination').value.trim(),
-        weight:       document.getElementById('f-weight').value.trim(),
+        weightRaw:    document.getElementById('f-weight').value.trim(),
+        weightUnit:   currentWeightUnit,
+        weight:       currentWeightUnit === 'kg'
+          ? String(parseFloat((parseFloat(document.getElementById('f-weight').value) * 2.20462).toFixed(2)))
+          : document.getElementById('f-weight').value.trim(),
         pieces:       document.getElementById('f-pieces').value.trim() || '1',
         message:      document.getElementById('f-message').value.trim(),
       };
 
       // Build full address strings for display
-      currentFormData.originFull = [currentFormData.originStreet, currentFormData.originApt, currentFormData.originCity, currentFormData.origin].filter(Boolean).join(', ');
-      currentFormData.destFull   = [currentFormData.destStreet,   currentFormData.destApt,   currentFormData.destCity,   currentFormData.destination].filter(Boolean).join(', ');
+      currentFormData.originFull   = [currentFormData.originStreet, currentFormData.originApt, currentFormData.originCity, currentFormData.origin].filter(Boolean).join(', ');
+      currentFormData.destFull     = [currentFormData.destStreet,   currentFormData.destApt,   currentFormData.destCity,   currentFormData.destination].filter(Boolean).join(', ');
+      const wRaw = parseFloat(currentFormData.weightRaw);
+      currentFormData.weightDisplay = currentFormData.weightUnit === 'kg'
+        ? wRaw + ' kg (' + currentFormData.weight + ' lbs)'
+        : currentFormData.weight + ' lbs (' + (parseFloat(currentFormData.weight)/2.20462).toFixed(2) + ' kg)';
 
       currentRef = generateRef();
 
@@ -333,7 +370,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            weight:          currentFormData.weight,
+            weight:          currentFormData.weightRaw,
+            weight_unit:     currentFormData.weightUnit,
             origin_zip:      currentFormData.origin,
             destination_zip: currentFormData.destination,
             service_type:    currentFormData.service
@@ -481,7 +519,7 @@
         <div class="cdetail"><span>Delivery</span><strong>${selectedRate.delivery_label || selectedRate.delivery_days + ' business days'}</strong></div>
         <div class="cdetail"><span>From</span><strong>${currentFormData.originFull}</strong></div>
         <div class="cdetail"><span>To</span><strong>${currentFormData.destFull}</strong></div>
-        <div class="cdetail"><span>Weight</span><strong>${currentFormData.weight} lbs</strong></div>
+        <div class="cdetail"><span>Weight</span><strong>${currentFormData.weightDisplay || currentFormData.weight + ' lbs'}</strong></div>
         <div class="cdetail total-row"><span>Total</span><strong>$${selectedRate.cpars_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></div>
       `;
 
@@ -510,12 +548,15 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount:         selectedRate.cpars_price,
-            rate_id:        selectedRate.rate_id,
-            customer_email: currentFormData.email,
-            ref:            currentRef,
-            carrier:        selectedRate.carrier,
-            service:        selectedRate.service
+            amount:              selectedRate.cpars_price,
+            rate_id:             selectedRate.rate_id,
+            customer_email:      currentFormData.email,
+            ref:                 currentRef,
+            carrier:             selectedRate.carrier,
+            service:             selectedRate.service,
+            weight_declared:     currentFormData.weightRaw,
+            weight_unit:         currentFormData.weightUnit,
+            weight_buffered_lbs: currentFormData.weight
           })
         });
 
@@ -534,7 +575,27 @@
           }
         });
 
-        if (error) throw new Error(error.message);
+        if (error) {
+          // Payment failed/cancelled — silently notify owner
+          const failedAt = new Date().toLocaleString();
+          emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
+            name:             currentFormData.name,
+            email:            currentFormData.email,
+            phone:            currentFormData.phone,
+            reference_number: currentRef,
+            service:          currentFormData.service,
+            origin:           currentFormData.originFull,
+            destination:      currentFormData.destFull,
+            message:          'PAYMENT FAILED/CANCELLED: ' + error.message,
+            submitted_at:     failedAt,
+            carrier:          selectedRate.carrier,
+            amount:           '$' + selectedRate.cpars_price.toFixed(2),
+            weight:           currentFormData.weightDisplay,
+            tracking_number:  'N/A',
+            status:           'FAILED/CANCELLED'
+          }).catch(() => {});
+          throw new Error(error.message);
+        }
 
         if (paymentIntent.status === 'succeeded') {
           // Book shipment via ShipStation
@@ -570,8 +631,10 @@
             destination:      currentFormData.destFull,
             submitted_at:     submittedAt,
             carrier:          selectedRate.carrier,
-            amount:           `$${selectedRate.cpars_price.toFixed(2)}`,
-            tracking_number:  trackingNumber || 'Will be provided by carrier'
+            amount:           '$' + selectedRate.cpars_price.toFixed(2),
+            weight:           currentFormData.weightDisplay,
+            tracking_number:  trackingNumber || 'Will be provided by carrier',
+            status:           'CONFIRMED & PAID'
           });
 
           await emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
@@ -585,8 +648,10 @@
             message:          currentFormData.message,
             submitted_at:     submittedAt,
             carrier:          selectedRate.carrier,
-            amount:           `$${selectedRate.cpars_price.toFixed(2)}`,
-            tracking_number:  trackingNumber || 'Pending carrier assignment'
+            amount:           '$' + selectedRate.cpars_price.toFixed(2),
+            weight:           currentFormData.weightDisplay,
+            tracking_number:  trackingNumber || 'Pending carrier assignment',
+            status:           'CONFIRMED & PAID'
           });
 
           const requestData = { ...currentFormData, ref: currentRef, submittedAt, trackingNumber, carrier: selectedRate.carrier, amount: selectedRate.cpars_price };

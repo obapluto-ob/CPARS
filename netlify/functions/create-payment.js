@@ -1,4 +1,5 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { isRateLimited, rateLimitResponse } = require('./utils/rateLimit');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,9 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
-  const { amount, rate_id, customer_email, ref, carrier, service } = JSON.parse(event.body || '{}');
+  if (isRateLimited(event)) return rateLimitResponse();
+
+  const { amount, rate_id, customer_email, ref, carrier, service, weight_declared, weight_unit, weight_buffered_lbs } = JSON.parse(event.body || '{}');
 
   if (!amount || !customer_email || !ref) {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
@@ -28,10 +31,13 @@ exports.handler = async (event) => {
       receipt_email:        customer_email,
       description:          `CPARS Transportation — Freight Shipment ${ref}`,
       metadata: {
-        cpars_ref: ref,
-        rate_id:   rate_id   || '',
-        carrier:   carrier   || '',
-        service:   service   || ''
+        cpars_ref:            ref,
+        rate_id:              rate_id              || '',
+        carrier:              carrier              || '',
+        service:              service              || '',
+        weight_declared:      String(weight_declared      || ''),
+        weight_unit:          weight_unit          || 'lbs',
+        weight_buffered_lbs:  String(weight_buffered_lbs  || '')
       }
     });
 
