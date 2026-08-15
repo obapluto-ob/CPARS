@@ -120,8 +120,41 @@
 
           <div class="form-row">
             <div class="input-group">
+              <label>Pickup Street Address <span class="req">*</span></label>
+              <input type="text" id="f-origin-street" placeholder="e.g. 555 Butterfield Rd"/>
+            </div>
+            <div class="input-group">
+              <label>Pickup Apt / Suite / Unit</label>
+              <input type="text" id="f-origin-apt" placeholder="e.g. Suite 200"/>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="input-group">
+              <label>Pickup City, State <span class="req">*</span></label>
+              <input type="text" id="f-origin-city" placeholder="e.g. Houston, TX"/>
+            </div>
+            <div class="input-group">
               <label>Pickup ZIP Code <span class="req">*</span></label>
               <input type="text" id="f-origin" placeholder="e.g. 77090"/>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="input-group">
+              <label>Destination Street Address <span class="req">*</span></label>
+              <input type="text" id="f-dest-street" placeholder="e.g. 123 Main St"/>
+            </div>
+            <div class="input-group">
+              <label>Destination Apt / Suite / Unit</label>
+              <input type="text" id="f-dest-apt" placeholder="e.g. Unit 5B"/>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="input-group">
+              <label>Destination City, State <span class="req">*</span></label>
+              <input type="text" id="f-dest-city" placeholder="e.g. Dallas, TX"/>
             </div>
             <div class="input-group">
               <label>Destination ZIP Code <span class="req">*</span></label>
@@ -132,7 +165,7 @@
           <div class="form-row">
             <div class="input-group">
               <label>Cargo Weight (lbs) <span class="req">*</span></label>
-              <input type="number" id="f-weight" placeholder="e.g. 500" min="1"/>
+              <input type="number" id="f-weight" placeholder="e.g. 50" min="1"/>
             </div>
             <div class="input-group">
               <label>Number of Pieces</label>
@@ -156,6 +189,14 @@
           <div class="quotes-header">
             <h3><i class="fa-solid fa-tags"></i> Available Carrier Quotes</h3>
             <p>Select the best rate for your shipment</p>
+          </div>
+          <!-- Delivery Speed Filter -->
+          <div class="quotes-filter">
+            <button class="qfilter-btn active" onclick="filterQuotes('all', this)">All</button>
+            <button class="qfilter-btn" onclick="filterQuotes('1', this)"><i class="fa-solid fa-bolt"></i> Next Day</button>
+            <button class="qfilter-btn" onclick="filterQuotes('2', this)">2 Day</button>
+            <button class="qfilter-btn" onclick="filterQuotes('3', this)">3 Day</button>
+            <button class="qfilter-btn" onclick="filterQuotes('economy', this)">Economy</button>
           </div>
           <div id="quotesList" class="quotes-list"></div>
           <button class="btn-outline-dark" onclick="backToForm()" style="margin-top:16px;">

@@ -95,6 +95,12 @@
 
     function saveRequest(data) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, savedAt: Date.now() })); } catch(e) {}
+      // Also save to admin shipments log
+      try {
+        const all = JSON.parse(localStorage.getItem('cpars_all_shipments') || '[]');
+        all.push({ ...data, savedAt: Date.now() });
+        localStorage.setItem('cpars_all_shipments', JSON.stringify(all));
+      } catch(e) {}
       const expires = new Date(Date.now() + TTL_DAYS * 86400000).toUTCString();
       document.cookie = `${COOKIE_KEY}=${data.ref}; expires=${expires}; path=/; SameSite=Lax`;
     }
@@ -207,8 +213,9 @@
         <div class="cdetail"><span>Email</span><strong>${data.email || '—'}</strong></div>
         <div class="cdetail"><span>Phone</span><strong>${data.phone || '—'}</strong></div>
         <div class="cdetail"><span>Service</span><strong>${data.service || '—'}</strong></div>
-        <div class="cdetail"><span>Pickup ZIP</span><strong>${data.origin || '—'}</strong></div>
-        <div class="cdetail"><span>Destination ZIP</span><strong>${data.destination || '—'}</strong></div>
+        <div class="cdetail"><span>Pickup</span><strong>${data.originFull || data.origin || '—'}</strong></div>
+        <div class="cdetail"><span>Destination</span><strong>${data.destFull || data.destination || '—'}</strong></div>
+        <div class="cdetail"><span>Weight</span><strong>${data.weight || '—'} lbs</strong></div>
         <div class="cdetail"><span>Carrier</span><strong>${data.carrier || '—'}</strong></div>
         <div class="cdetail"><span>Amount Paid</span><strong>$${data.amount ? data.amount.toFixed(2) : '—'}</strong></div>
         <div class="cdetail"><span>Submitted</span><strong>${data.submittedAt || '—'}</strong></div>
@@ -245,14 +252,18 @@
       const note = document.getElementById('formNote');
 
       const fields = [
-        { id: 'f-name',        label: 'Full Name' },
-        { id: 'f-email',       label: 'Email Address' },
-        { id: 'f-phone',       label: 'Phone Number' },
-        { id: 'f-service',     label: 'Service Type' },
-        { id: 'f-origin',      label: 'Pickup ZIP Code' },
-        { id: 'f-destination', label: 'Destination ZIP Code' },
-        { id: 'f-weight',      label: 'Cargo Weight' },
-        { id: 'f-message',     label: 'Shipment Details' },
+        { id: 'f-name',         label: 'Full Name' },
+        { id: 'f-email',        label: 'Email Address' },
+        { id: 'f-phone',        label: 'Phone Number' },
+        { id: 'f-service',      label: 'Service Type' },
+        { id: 'f-origin-street',label: 'Pickup Street Address' },
+        { id: 'f-origin-city',  label: 'Pickup City, State' },
+        { id: 'f-origin',       label: 'Pickup ZIP Code' },
+        { id: 'f-dest-street',  label: 'Destination Street Address' },
+        { id: 'f-dest-city',    label: 'Destination City, State' },
+        { id: 'f-destination',  label: 'Destination ZIP Code' },
+        { id: 'f-weight',       label: 'Cargo Weight' },
+        { id: 'f-message',      label: 'Shipment Details' },
       ];
 
       document.querySelectorAll('.field-error').forEach(el => el.remove());
@@ -290,16 +301,26 @@
       }
 
       currentFormData = {
-        name:        document.getElementById('f-name').value.trim(),
-        email:       document.getElementById('f-email').value.trim(),
-        phone:       document.getElementById('f-phone').value.trim(),
-        service:     document.getElementById('f-service').value,
-        origin:      document.getElementById('f-origin').value.trim(),
-        destination: document.getElementById('f-destination').value.trim(),
-        weight:      document.getElementById('f-weight').value.trim(),
-        pieces:      document.getElementById('f-pieces').value.trim() || '1',
-        message:     document.getElementById('f-message').value.trim(),
+        name:         document.getElementById('f-name').value.trim(),
+        email:        document.getElementById('f-email').value.trim(),
+        phone:        document.getElementById('f-phone').value.trim(),
+        service:      document.getElementById('f-service').value,
+        originStreet: document.getElementById('f-origin-street').value.trim(),
+        originApt:    document.getElementById('f-origin-apt').value.trim(),
+        originCity:   document.getElementById('f-origin-city').value.trim(),
+        origin:       document.getElementById('f-origin').value.trim(),
+        destStreet:   document.getElementById('f-dest-street').value.trim(),
+        destApt:      document.getElementById('f-dest-apt').value.trim(),
+        destCity:     document.getElementById('f-dest-city').value.trim(),
+        destination:  document.getElementById('f-destination').value.trim(),
+        weight:       document.getElementById('f-weight').value.trim(),
+        pieces:       document.getElementById('f-pieces').value.trim() || '1',
+        message:      document.getElementById('f-message').value.trim(),
       };
+
+      // Build full address strings for display
+      currentFormData.originFull = [currentFormData.originStreet, currentFormData.originApt, currentFormData.originCity, currentFormData.origin].filter(Boolean).join(', ');
+      currentFormData.destFull   = [currentFormData.destStreet,   currentFormData.destApt,   currentFormData.destCity,   currentFormData.destination].filter(Boolean).join(', ');
 
       currentRef = generateRef();
 
@@ -367,13 +388,12 @@
       showQuotes(rates);
     }
 
-    /* Carrier logo map — real brand SVGs via CDN */
+    /* Carrier logo map — real brand logos via Wikipedia SVG CDN */
     const CARRIER_LOGOS = {
-      ups:           'https://upload.wikimedia.org/wikipedia/commons/1/1b/UPS_Logo_Shield_2017.svg',
-      fedex_walleted:'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg',
-      stamps_com:    'https://upload.wikimedia.org/wikipedia/commons/4/48/USPS_Logo.svg',
-      globalpost:    'https://upload.wikimedia.org/wikipedia/commons/4/48/USPS_Logo.svg',
-      default:       ''
+      ups:            { src: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/UPS_Logo_Shield_2017.svg',           bg: '#301506' },
+      fedex_walleted: { src: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg', bg: '#4d148c' },
+      stamps_com:     { src: 'https://upload.wikimedia.org/wikipedia/commons/4/48/USPS_Logo.svg',                     bg: '#004b87' },
+      globalpost:     { src: 'https://upload.wikimedia.org/wikipedia/commons/4/48/USPS_Logo.svg',                     bg: '#004b87' },
     };
 
     function showQuotes(rates) {
@@ -391,10 +411,15 @@
         const badge     = isBest    ? '<span class="quote-badge badge-best"><i class="fa-solid fa-star"></i> Best Value</span>'
                         : isFastest ? '<span class="quote-badge badge-fast"><i class="fa-solid fa-bolt"></i> Fastest</span>' : '';
 
-        const logoUrl   = CARRIER_LOGOS[r.carrier_code] || CARRIER_LOGOS.default;
-        const logoHtml  = logoUrl
-          ? `<img src="${logoUrl}" alt="${r.carrier}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><i class="fa-solid fa-truck" style="display:none;font-size:1.6rem;color:#1a56db"></i>`
-          : `<i class="fa-solid fa-truck" style="font-size:1.6rem;color:#1a56db"></i>`;
+        const logo    = CARRIER_LOGOS[r.carrier_code];
+        const logoHtml = logo
+          ? `<div class="quote-logo-box" style="background:${logo.bg}">
+               <img src="${logo.src}" alt="${r.carrier}"
+                 onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-truck\' style=\'font-size:1.4rem;color:#fff\'></i>'"/>
+             </div>`
+          : `<div class="quote-logo-box" style="background:#1a56db">
+               <i class="fa-solid fa-truck" style="font-size:1.4rem;color:#fff"></i>
+             </div>`;
 
         const deliveryLabel = r.delivery_label || (r.delivery_days ? `${r.delivery_days} business day(s)` : 'Contact for ETA');
 
@@ -453,9 +478,10 @@
       document.getElementById('paymentSummary').innerHTML = `
         <div class="cdetail"><span>Carrier</span><strong>${selectedRate.carrier}</strong></div>
         <div class="cdetail"><span>Service</span><strong>${selectedRate.service}</strong></div>
-        <div class="cdetail"><span>Delivery</span><strong>${selectedRate.delivery_days} business days</strong></div>
-        <div class="cdetail"><span>From</span><strong>${currentFormData.origin}</strong></div>
-        <div class="cdetail"><span>To</span><strong>${currentFormData.destination}</strong></div>
+        <div class="cdetail"><span>Delivery</span><strong>${selectedRate.delivery_label || selectedRate.delivery_days + ' business days'}</strong></div>
+        <div class="cdetail"><span>From</span><strong>${currentFormData.originFull}</strong></div>
+        <div class="cdetail"><span>To</span><strong>${currentFormData.destFull}</strong></div>
+        <div class="cdetail"><span>Weight</span><strong>${currentFormData.weight} lbs</strong></div>
         <div class="cdetail total-row"><span>Total</span><strong>$${selectedRate.cpars_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></div>
       `;
 
@@ -540,8 +566,8 @@
             email:            currentFormData.email,
             reference_number: currentRef,
             service:          currentFormData.service,
-            origin:           currentFormData.origin,
-            destination:      currentFormData.destination,
+            origin:           currentFormData.originFull,
+            destination:      currentFormData.destFull,
             submitted_at:     submittedAt,
             carrier:          selectedRate.carrier,
             amount:           `$${selectedRate.cpars_price.toFixed(2)}`,
@@ -554,8 +580,8 @@
             phone:            currentFormData.phone,
             reference_number: currentRef,
             service:          currentFormData.service,
-            origin:           currentFormData.origin,
-            destination:      currentFormData.destination,
+            origin:           currentFormData.originFull,
+            destination:      currentFormData.destFull,
             message:          currentFormData.message,
             submitted_at:     submittedAt,
             carrier:          selectedRate.carrier,
@@ -567,7 +593,7 @@
           saveRequest(requestData);
           showConfirmation(requestData, trackingNumber);
 
-          document.getElementById('paymentPanel').style.display    = 'none';
+          document.getElementById('paymentPanel').style.display     = 'none';
           document.getElementById('confirmationPanel').style.display = 'flex';
           document.getElementById('confirmationPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
           dismissBanner();
@@ -577,6 +603,37 @@
         document.getElementById('card-errors').textContent = err.message || 'Payment failed. Please try again.';
         payBtn.disabled = false;
         payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay & Book Shipment';
+      }
+    };
+
+    /* ══════════════════════════════
+       QUOTE FILTER
+    ══════════════════════════════ */
+    window.filterQuotes = (type, btn) => {
+      document.querySelectorAll('.qfilter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cards = document.querySelectorAll('.quote-card');
+      const rates = window._currentRates || [];
+      cards.forEach((card, i) => {
+        const r = rates[i];
+        if (!r) return;
+        const days = parseInt(r.delivery_days) || 99;
+        let show = true;
+        if (type === '1')       show = days <= 1;
+        else if (type === '2')  show = days <= 2;
+        else if (type === '3')  show = days <= 3;
+        else if (type === 'economy') show = days >= 4 || r.estimated;
+        card.style.display = show ? '' : 'none';
+      });
+      const visible = [...cards].filter(c => c.style.display !== 'none');
+      const noRes   = document.getElementById('quotesNoResult');
+      if (noRes) noRes.remove();
+      if (visible.length === 0) {
+        const msg = document.createElement('p');
+        msg.id = 'quotesNoResult';
+        msg.style.cssText = 'text-align:center;color:#64748b;padding:20px;font-size:0.9rem;';
+        msg.innerHTML = '<i class="fa-solid fa-circle-info"></i> No quotes match this filter. Try another option.';
+        document.getElementById('quotesList').appendChild(msg);
       }
     };
 
