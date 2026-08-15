@@ -1,9 +1,15 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const https  = require('https');
 
-// Send email via EmailJS REST API (server-side, no browser needed)
+// Send email via EmailJS REST API (server-side)
 async function sendEmail(serviceId, templateId, publicKey, params) {
-  const payload = JSON.stringify({ service_id: serviceId, template_id: templateId, user_id: publicKey, template_params: params });
+  const payload = JSON.stringify({
+    service_id:      serviceId,
+    template_id:     templateId,
+    user_id:         publicKey,
+    accessToken:     process.env.EMAILJS_PRIVATE_KEY,
+    template_params: params
+  });
   return new Promise((resolve, reject) => {
     const req = https.request({
       hostname: 'api.emailjs.com',
