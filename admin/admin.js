@@ -34,9 +34,14 @@ function doLogout() {
 // Auto-login if session active
 if (sessionStorage.getItem(SESSION_KEY)) {
   adminSecret = sessionStorage.getItem('cpars_admin_secret') || '';
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('dashboard').style.display   = 'block';
-  loadActivity();
+  if (adminSecret) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display   = 'block';
+    loadActivity();
+  } else {
+    // Secret missing from session — force re-login
+    sessionStorage.removeItem(SESSION_KEY);
+  }
 }
 
 /* ══════════════════════════════
