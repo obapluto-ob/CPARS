@@ -858,6 +858,111 @@
       document.getElementById('formNote').textContent = '';
     };
 
+    /* ══════════════════════════════
+       TRACK ORDER
+    ══════════════════════════════ */
+    window.toggleTrackPanel = () => {
+      const panel = document.getElementById('trackPanel');
+      const isHidden = panel.style.display === 'none';
+      panel.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Pre-fill ref from localStorage/cookie if available
+        const saved = loadRequest();
+        if (saved && saved.ref) {
+          document.getElementById('t-ref').value   = saved.ref;
+          document.getElementById('t-email').value = saved.email || '';
+        }
+        // Also check URL params
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('track')) document.getElementById('t-ref').value   = params.get('track');
+        if (params.get('email')) document.getElementById('t-email').value = params.get('email');
+      }
+    };
+
+    window.lookupOrder = async () => {
+      const ref    = document.getElementById('t-ref').value.trim();
+      const email  = document.getElementById('t-email').value.trim();
+      const btn    = document.getElementById('trackBtn');
+      const result = document.getElementById('trackResult');
+
+      if (!ref || !email) {
+        result.style.display = 'block';
+        result.innerHTML = `<div class="track-error"><i class="fa-solid fa-circle-exclamation"></i><span>Please enter both your reference number and email address.</span></div>`;
+        return;
+      }
+
+      btn.disabled  = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Looking up...';
+      result.style.display = 'none';
+
+      try {
+        const res  = await fetch('/.netlify/functions/track-order', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ ref, email })
+        });
+        const data = await res.json();
+
+        if (!data.found) {
+          result.style.display = 'block';
+          result.innerHTML = `<div class="track-error"><i class="fa-solid fa-circle-exclamation"></i><span>${data.error || 'Order not found.'}</span></div>`;
+          return;
+        }
+
+        const trackingRow = data.tracking_number
+          ? `<div class="track-detail"><span>Tracking Number</span><strong style="color:#16a34a">${data.tracking_number}</strong></div>`
+          : '';
+
+        const receiptLink = data.receipt_url
+          ? `<a href="${data.receipt_url}" target="_blank" class="btn-outline-dark" style="font-size:0.85rem;padding:8px 16px;"><i class="fa-solid fa-receipt"></i> View Receipt</a>`
+          : '';
+
+        result.style.display = 'block';
+        result.innerHTML = `
+          <div class="track-status-card">
+            <div class="track-status-header">
+              <div class="track-status-icon" style="background:${data.statusColor}">
+                <i class="fa-solid ${data.statusIcon}"></i>
+              </div>
+              <div>
+                <h4 style="color:${data.statusColor}">${data.statusLabel}</h4>
+                <p>${data.statusMessage}</p>
+              </div>
+            </div>
+            <div class="track-details-grid">
+              <div class="track-detail"><span>Reference</span><strong>${data.ref}</strong></div>
+              <div class="track-detail"><span>Date</span><strong>${data.submittedAt}</strong></div>
+              <div class="track-detail"><span>Name</span><strong>${data.name}</strong></div>
+              <div class="track-detail"><span>Amount Paid</span><strong>$${data.amount}</strong></div>
+              <div class="track-detail"><span>Carrier</span><strong>${data.carrier}</strong></div>
+              <div class="track-detail"><span>Service</span><strong>${data.service}</strong></div>
+              <div class="track-detail"><span>From</span><strong>${data.origin}</strong></div>
+              <div class="track-detail"><span>To</span><strong>${data.destination}</strong></div>
+              <div class="track-detail"><span>Weight</span><strong>${data.weight}</strong></div>
+              ${trackingRow}
+            </div>
+            <div class="track-actions">
+              ${receiptLink}
+              <a href="tel:+13522138976" class="btn-primary" style="font-size:0.85rem;padding:8px 16px;">
+                <i class="fa-solid fa-phone"></i> Call Us
+              </a>
+              <a href="mailto:cparstransportation@cparstransportationcom.com" class="btn-outline-dark" style="font-size:0.85rem;padding:8px 16px;">
+                <i class="fa-solid fa-envelope"></i> Email Us
+              </a>
+            </div>
+          </div>
+        `;
+
+      } catch (err) {
+        result.style.display = 'block';
+        result.innerHTML = `<div class="track-error"><i class="fa-solid fa-circle-exclamation"></i><span>Something went wrong. Please try again or call us at +1 (352) 213-8976.</span></div>`;
+      }
+
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Track Order';
+    };
+
   </script>
 
 </body>

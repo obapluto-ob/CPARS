@@ -27,6 +27,36 @@
       <span class="tag">Contact Us</span>
       <h2>Get Your Instant Freight Quote</h2>
       <p>Fill out the form below and get real carrier rates instantly. Pick your quote and pay securely online.</p>
+      <button class="track-toggle-btn" onclick="toggleTrackPanel()">
+        <i class="fa-solid fa-magnifying-glass-location"></i> Track My Order
+      </button>
+    </div>
+
+    <!-- TRACK ORDER PANEL -->
+    <div id="trackPanel" class="track-panel" style="display:none;">
+      <div class="track-panel-inner">
+        <div class="track-header">
+          <i class="fa-solid fa-magnifying-glass-location"></i>
+          <div>
+            <h3>Track Your Shipment</h3>
+            <p>Enter your reference number and email to see your order status.</p>
+          </div>
+        </div>
+        <div class="track-fields">
+          <div class="track-input-group">
+            <label>Reference Number</label>
+            <input type="text" id="t-ref" placeholder="e.g. CPARS-AB3X9K2M" autocomplete="off"/>
+          </div>
+          <div class="track-input-group">
+            <label>Email Address</label>
+            <input type="email" id="t-email" placeholder="Email you used when booking"/>
+          </div>
+          <button class="btn-primary" id="trackBtn" onclick="lookupOrder()">
+            <i class="fa-solid fa-magnifying-glass"></i> Track Order
+          </button>
+        </div>
+        <div id="trackResult" style="display:none;"></div>
+      </div>
     </div>
 
     <div class="contact-inner">
