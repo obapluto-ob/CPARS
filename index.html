@@ -360,26 +360,36 @@
         return false;
       }
 
+      const parseState = (cityState) => { const m = cityState.match(/,\s*([A-Za-z]{2})\s*$/); return m ? m[1].toUpperCase() : ''; };
+      const stripState = (cityState) => cityState.replace(/,\s*[A-Za-z]{2}\s*$/, '').trim();
+
+      const rawOriginCity = document.getElementById('f-origin-city').value.trim();
+      const rawDestCity   = document.getElementById('f-dest-city').value.trim();
+
       currentFormData = {
-        name:         document.getElementById('f-name').value.trim(),
-        email:        document.getElementById('f-email').value.trim(),
-        phone:        document.getElementById('f-phone').value.trim(),
-        service:      document.getElementById('f-service').value,
-        originStreet: document.getElementById('f-origin-street').value.trim(),
-        originApt:    document.getElementById('f-origin-apt').value.trim(),
-        originCity:   document.getElementById('f-origin-city').value.trim(),
-        origin:       document.getElementById('f-origin').value.trim(),
-        destStreet:   document.getElementById('f-dest-street').value.trim(),
-        destApt:      document.getElementById('f-dest-apt').value.trim(),
-        destCity:     document.getElementById('f-dest-city').value.trim(),
-        destination:  document.getElementById('f-destination').value.trim(),
-        weightRaw:    document.getElementById('f-weight').value.trim(),
-        weightUnit:   currentWeightUnit,
-        weight:       currentWeightUnit === 'kg'
+        name:           document.getElementById('f-name').value.trim(),
+        email:          document.getElementById('f-email').value.trim(),
+        phone:          document.getElementById('f-phone').value.trim(),
+        service:        document.getElementById('f-service').value,
+        originStreet:   document.getElementById('f-origin-street').value.trim(),
+        originApt:      document.getElementById('f-origin-apt').value.trim(),
+        originCity:     rawOriginCity,
+        originCityOnly: stripState(rawOriginCity),
+        originState:    parseState(rawOriginCity),
+        origin:         document.getElementById('f-origin').value.trim(),
+        destStreet:     document.getElementById('f-dest-street').value.trim(),
+        destApt:        document.getElementById('f-dest-apt').value.trim(),
+        destCity:       rawDestCity,
+        destCityOnly:   stripState(rawDestCity),
+        destState:      parseState(rawDestCity),
+        destination:    document.getElementById('f-destination').value.trim(),
+        weightRaw:      document.getElementById('f-weight').value.trim(),
+        weightUnit:     currentWeightUnit,
+        weight:         currentWeightUnit === 'kg'
           ? String(parseFloat((parseFloat(document.getElementById('f-weight').value) * 2.20462).toFixed(2)))
           : document.getElementById('f-weight').value.trim(),
-        pieces:       document.getElementById('f-pieces').value.trim() || '1',
-        message:      document.getElementById('f-message').value.trim(),
+        pieces:         document.getElementById('f-pieces').value.trim() || '1',
+        message:        document.getElementById('f-message').value.trim(),
       };
 
       // Build full address strings for display
@@ -404,7 +414,13 @@
             weight:          currentFormData.weightRaw,
             weight_unit:     currentFormData.weightUnit,
             origin_zip:      currentFormData.origin,
+            origin_street:   currentFormData.originStreet,
+            origin_city:     currentFormData.originCityOnly,
+            origin_state:    currentFormData.originState,
             destination_zip: currentFormData.destination,
+            dest_street:     currentFormData.destStreet,
+            dest_city:       currentFormData.destCityOnly,
+            dest_state:      currentFormData.destState,
             service_type:    currentFormData.service
           })
         });
@@ -688,7 +704,13 @@
                   weight:          currentFormData.weightRaw,
                   weight_unit:     currentFormData.weightUnit,
                   origin_zip:      currentFormData.origin,
+                  origin_street:   currentFormData.originStreet,
+                  origin_city:     currentFormData.originCityOnly,
+                  origin_state:    currentFormData.originState,
                   destination_zip: currentFormData.destination,
+                  dest_street:     currentFormData.destStreet,
+                  dest_city:       currentFormData.destCityOnly,
+                  dest_state:      currentFormData.destState,
                   service_type:    currentFormData.service
                 })
               });
@@ -716,16 +738,19 @@
                 phone:           currentFormData.phone,
                 origin_zip:      currentFormData.origin,
                 origin_street:   currentFormData.originStreet,
-                origin_city:     currentFormData.originCity,
+                origin_city:     currentFormData.originCityOnly,
+                origin_state:    currentFormData.originState,
                 destination_zip: currentFormData.destination,
                 dest_street:     currentFormData.destStreet,
-                dest_city:       currentFormData.destCity,
+                dest_city:       currentFormData.destCityOnly,
+                dest_state:      currentFormData.destState,
                 weight:          currentFormData.weight,
                 message:         currentFormData.message
               })
             });
             const bookData = await bookRes.json();
             trackingNumber = bookData.tracking_number || null;
+            const labelUrl = bookData.label_url || null;
             if (!bookData.success) bookingFailed = true;
           } catch {
             bookingFailed = true;
@@ -737,6 +762,7 @@
         const submittedAt    = new Date().toLocaleString();
         const trackingNote   = trackingNumber || (bookingFailed ? 'Booking error — CPARS will contact you within 1 hour' : 'Will be provided by carrier');
         const ownerBookNote  = trackingNumber || (bookingFailed ? 'BOOKING FAILED AFTER PAYMENT — manual action required' : 'Pending carrier assignment');
+        const labelNote      = labelUrl ? labelUrl : null;
 
         const emailParams = {
           name:             currentFormData.name,
@@ -749,6 +775,7 @@
           carrier:          selectedRate.carrier,
           amount:           '$' + selectedRate.cpars_price.toFixed(2),
           tracking_number:  trackingNote,
+          label_url:        labelNote || 'Will be emailed separately',
           status:           'CONFIRMED & PAID'
         };
 

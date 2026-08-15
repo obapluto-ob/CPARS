@@ -19,8 +19,8 @@ exports.handler = async (event) => {
   const {
     admin_secret,
     ref, name, email, phone,
-    origin_zip, origin_street, origin_city,
-    destination_zip, dest_street, dest_city,
+    origin_zip, origin_street, origin_city, origin_state,
+    destination_zip, dest_street, dest_city, dest_state,
     weight, weight_unit,
     carrier_code, service_code,
     message
@@ -45,37 +45,55 @@ exports.handler = async (event) => {
   // Apply same 10% buffer as original booking
   const weightNum = parseFloat((weightInLbs * 1.10).toFixed(2));
 
-  // Step 1 — Fetch fresh rates
+  // Step 1 — Fetch fresh rates using POST /v2/rates (real bookable rate_ids)
   let freshRateId = null;
   try {
-    const ratesRes = await fetch('https://api.shipstation.com/v2/rates/estimate', {
+    const ratesRes = await fetch('https://api.shipstation.com/v2/rates', {
       method: 'POST',
       headers: { 'API-Key': API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from_country_code: 'US',
-        from_postal_code:  origin_zip,
-        to_country_code:   'US',
-        to_postal_code:    destination_zip,
-        weight:            { value: weightNum, unit: 'pound' },
-        dimensions:        { unit: 'inch', length: 20, width: 15, height: 10 }
+        shipment: {
+          validate_address: 'no_validation',
+          ship_to: {
+            name:           name        || 'Client',
+            address_line1:  dest_street || '123 Main St',
+            city_locality:  dest_city   || '',
+            state_province: dest_state  || '',
+            postal_code:    destination_zip,
+            country_code:   'US',
+            address_residential_indicator: 'unknown'
+          },
+          ship_from: {
+            name:           'CPARS Transportation LLC',
+            phone:          '+13522138976',
+            address_line1:  origin_street || '555 Butterfield Rd',
+            city_locality:  origin_city   || 'Houston',
+            state_province: origin_state  || 'TX',
+            postal_code:    origin_zip,
+            country_code:   'US',
+            address_residential_indicator: 'no'
+          },
+          packages: [{
+            weight:     { value: weightNum, unit: 'pound' },
+            dimensions: { unit: 'inch', length: 20, width: 15, height: 10 }
+          }]
+        }
       })
     });
 
     const ratesData = await ratesRes.json();
+    const ratesList = ratesData.rate_response?.rates || ratesData.rates || [];
 
-    if (Array.isArray(ratesData)) {
-      // Try to match same carrier + service first
-      let match = ratesData.find(r =>
+    if (Array.isArray(ratesList)) {
+      let match = ratesList.find(r =>
         r.carrier_code === carrier_code && r.service_code === service_code &&
         r.validation_status !== 'invalid' && r.error_messages?.length === 0
       );
-      // Fallback: match carrier only
-      if (!match) match = ratesData.find(r =>
+      if (!match) match = ratesList.find(r =>
         r.carrier_code === carrier_code &&
         r.validation_status !== 'invalid' && r.error_messages?.length === 0
       );
-      // Fallback: cheapest valid rate
-      if (!match) match = ratesData
+      if (!match) match = ratesList
         .filter(r => r.validation_status !== 'invalid' && r.error_messages?.length === 0 && r.shipping_amount?.amount > 0)
         .sort((a, b) => a.shipping_amount.amount - b.shipping_amount.amount)[0];
 
@@ -112,6 +130,7 @@ exports.handler = async (event) => {
           phone:                         phone       || '',
           address_line1:                 dest_street || '123 Main St',
           city_locality:                 dest_city   || '',
+          state_province:                dest_state  || '',
           postal_code:                   destination_zip,
           country_code:                  'US',
           address_residential_indicator: 'unknown'
@@ -121,7 +140,7 @@ exports.handler = async (event) => {
           phone:                         '+13522138976',
           address_line1:                 origin_street || '555 Butterfield Rd',
           city_locality:                 origin_city   || 'Houston',
-          state_province:                'TX',
+          state_province:                origin_state  || 'TX',
           postal_code:                   origin_zip,
           country_code:                  'US',
           address_residential_indicator: 'no'

@@ -26,9 +26,13 @@ exports.handler = async (event) => {
 
   if (isRateLimited(event)) return rateLimitResponse();
 
-  const { weight, weight_unit, origin_zip, destination_zip } = JSON.parse(event.body || '{}');
+  const {
+    weight, weight_unit,
+    origin_zip, origin_street, origin_city, origin_state,
+    destination_zip, dest_street, dest_city, dest_state
+  } = JSON.parse(event.body || '{}');
 
-  // Convert kg to lbs if needed — 1 kg = 2.20462 lbs
+  // Convert kg to lbs if needed
   const weightInLbs = weight_unit === 'kg'
     ? parseFloat((parseFloat(weight) * 2.20462).toFixed(2))
     : parseFloat(weight);
@@ -37,16 +41,14 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 
-  // Add 10% weight buffer to protect against client under-declaration
+  // Add 10% weight buffer
   const WEIGHT_BUFFER = 1.10;
   const weightNum     = parseFloat((weightInLbs * WEIGHT_BUFFER).toFixed(2));
   const API_KEY       = process.env.SHIPSTATION_API_KEY;
 
-  // Only query carriers that support this weight
   const eligibleCarriers = CARRIERS.filter(c => weightNum <= c.maxWeight);
 
   if (eligibleCarriers.length === 0) {
-    // Weight exceeds all parcel carriers — return empty so frontend uses estimator
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
@@ -54,22 +56,45 @@ exports.handler = async (event) => {
     };
   }
 
+  // Use POST /v2/rates with full shipment object — returns real bookable rate_ids
+  const shipmentBody = {
+    rate_options: { carrier_ids: eligibleCarriers.map(c => c.id) },
+    shipment: {
+      validate_address: 'no_validation',
+      ship_to: {
+        name:          'Recipient',
+        address_line1: dest_street   || '123 Main St',
+        city_locality: dest_city     || '',
+        state_province: dest_state   || '',
+        postal_code:   destination_zip,
+        country_code:  'US',
+        address_residential_indicator: 'unknown'
+      },
+      ship_from: {
+        name:          'CPARS Transportation LLC',
+        phone:         '+13522138976',
+        address_line1: origin_street || '555 Butterfield Rd',
+        city_locality: origin_city   || 'Houston',
+        state_province: origin_state || 'TX',
+        postal_code:   origin_zip,
+        country_code:  'US',
+        address_residential_indicator: 'no'
+      },
+      packages: [{
+        weight:     { value: weightNum, unit: 'pound' },
+        dimensions: { unit: 'inch', length: 20, width: 15, height: 10 }
+      }]
+    }
+  };
+
   const rateRequests = eligibleCarriers.map(carrier =>
-    fetch('https://api.shipstation.com/v2/rates/estimate', {
+    fetch('https://api.shipstation.com/v2/rates', {
       method: 'POST',
       headers: { 'API-Key': API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        carrier_id:        carrier.id,
-        from_country_code: 'US',
-        from_postal_code:  origin_zip,
-        to_country_code:   'US',
-        to_postal_code:    destination_zip,
-        weight:            { value: weightNum, unit: 'pound' },
-        dimensions:        { unit: 'inch', length: 20, width: 15, height: 10 }
-      })
+      body: JSON.stringify(shipmentBody)
     })
     .then(r => r.json())
-    .then(data => ({ carrier, data }))
+    .then(data => ({ carrier, data: data.rate_response?.rates || data.rates || [] }))
     .catch(() => null)
   );
 
