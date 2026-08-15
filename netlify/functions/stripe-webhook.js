@@ -7,7 +7,7 @@ async function sendEmail(serviceId, templateId, publicKey, params) {
     service_id:      serviceId,
     template_id:     templateId,
     user_id:         publicKey,
-    accessToken:     process.env.EMAILJS_PRIVATE_KEY,
+    accessToken:     process.env.EMAIL_PRIVATE_KEY,
     template_params: params
   });
   return new Promise((resolve, reject) => {
