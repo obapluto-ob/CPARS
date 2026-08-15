@@ -511,6 +511,10 @@
        STEP 2 — PAYMENT
     ══════════════════════════════ */
     function showPaymentPanel() {
+      if (!stripe) {
+        alert('Payment system is still loading. Please wait a moment and try again.');
+        return;
+      }
       document.getElementById('quotesPanel').style.display  = 'none';
       document.getElementById('paymentPanel').style.display = 'block';
 
@@ -538,33 +542,58 @@
       document.getElementById('paymentPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function showPaymentError(msg) {
+      document.getElementById('card-errors').textContent = msg || 'Something went wrong. Please try again.';
+      const payBtn = document.getElementById('payBtn');
+      payBtn.disabled = false;
+      payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay & Book Shipment';
+    }
+
     window.processPayment = async () => {
       const payBtn = document.getElementById('payBtn');
+
+      // Guard: stripe must be loaded
+      if (!stripe) {
+        showPaymentError('Payment system not ready. Please refresh the page and try again.');
+        return;
+      }
+
       payBtn.disabled = true;
       payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Payment...';
+      document.getElementById('card-errors').textContent = '';
 
       try {
-        // Create payment intent via Netlify function
-        const intentRes = await fetch('/.netlify/functions/create-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount:              selectedRate.cpars_price,
-            rate_id:             selectedRate.rate_id,
-            customer_email:      currentFormData.email,
-            ref:                 currentRef,
-            carrier:             selectedRate.carrier,
-            service:             selectedRate.service,
-            weight_declared:     currentFormData.weightRaw,
-            weight_unit:         currentFormData.weightUnit,
-            weight_buffered_lbs: currentFormData.weight
-          })
-        });
+        // STEP 1 — Create PaymentIntent server-side
+        let intentData;
+        try {
+          const intentRes = await fetch('/.netlify/functions/create-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount:              selectedRate.cpars_price,
+              rate_id:             selectedRate.rate_id,
+              customer_email:      currentFormData.email,
+              ref:                 currentRef,
+              carrier:             selectedRate.carrier,
+              service:             selectedRate.service,
+              weight_declared:     currentFormData.weightRaw,
+              weight_unit:         currentFormData.weightUnit,
+              weight_buffered_lbs: currentFormData.weight
+            })
+          });
+          intentData = await intentRes.json();
+        } catch {
+          showPaymentError('Network error. Please check your connection and try again.');
+          return;
+        }
 
-        const intentData = await intentRes.json();
-        if (!intentData.client_secret) throw new Error('Payment setup failed');
+        if (!intentData.client_secret) {
+          showPaymentError(intentData.error || 'Payment setup failed. Please try again.');
+          return;
+        }
 
-        // Confirm card payment
+        // STEP 2 — Confirm card with Stripe
+        payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Confirming Payment...';
         const { error, paymentIntent } = await stripe.confirmCardPayment(intentData.client_secret, {
           payment_method: {
             card: stripeCardElement,
@@ -577,8 +606,7 @@
         });
 
         if (error) {
-          // Payment failed/cancelled — silently notify owner
-          const failedAt = new Date().toLocaleString();
+          // Notify owner silently of failed/cancelled payment
           emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
             name:             currentFormData.name,
             email:            currentFormData.email,
@@ -587,22 +615,37 @@
             service:          currentFormData.service,
             origin:           currentFormData.originFull,
             destination:      currentFormData.destFull,
-            message:          'PAYMENT FAILED/CANCELLED: ' + error.message,
-            submitted_at:     failedAt,
+            message:          'PAYMENT FAILED: ' + error.message,
+            submitted_at:     new Date().toLocaleString(),
             carrier:          selectedRate.carrier,
             amount:           '$' + selectedRate.cpars_price.toFixed(2),
             weight:           currentFormData.weightDisplay,
             tracking_number:  'N/A',
-            status:           'FAILED/CANCELLED'
+            status:           'FAILED'
           }).catch(() => {});
-          throw new Error(error.message);
+          showPaymentError(error.message);
+          return;
         }
 
-        if (paymentIntent.status === 'succeeded') {
-          // Book shipment via ShipStation
-          let trackingNumber = null;
-          if (!selectedRate.estimated) {
-            const bookRes = await fetch('/.netlify/functions/book-shipment', {
+        // STEP 3 — Handle 3D Secure / requires_action
+        if (paymentIntent.status === 'requires_action') {
+          showPaymentError('Your bank requires additional verification. Please complete the authentication and try again.');
+          return;
+        }
+
+        if (paymentIntent.status !== 'succeeded') {
+          showPaymentError('Payment was not completed. Status: ' + paymentIntent.status + '. Please try again.');
+          return;
+        }
+
+        // STEP 4 — Book shipment via ShipStation
+        payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Booking Shipment...';
+        let trackingNumber = null;
+        let bookingFailed  = false;
+
+        if (!selectedRate.estimated) {
+          try {
+            const bookRes  = await fetch('/.netlify/functions/book-shipment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -619,56 +662,70 @@
             });
             const bookData = await bookRes.json();
             trackingNumber = bookData.tracking_number || null;
+            if (!bookData.success) bookingFailed = true;
+          } catch {
+            bookingFailed = true;
           }
-
-          // Send emails via EmailJS
-          const submittedAt = new Date().toLocaleString();
-          await emailjs.send(EMAILJS_SERVICE, EMAILJS_CLIENT_TPL, {
-            name:             currentFormData.name,
-            email:            currentFormData.email,
-            reference_number: currentRef,
-            service:          currentFormData.service,
-            origin:           currentFormData.originFull,
-            destination:      currentFormData.destFull,
-            submitted_at:     submittedAt,
-            carrier:          selectedRate.carrier,
-            amount:           '$' + selectedRate.cpars_price.toFixed(2),
-            weight:           currentFormData.weightDisplay,
-            tracking_number:  trackingNumber || 'Will be provided by carrier',
-            status:           'CONFIRMED & PAID'
-          });
-
-          await emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
-            name:             currentFormData.name,
-            email:            currentFormData.email,
-            phone:            currentFormData.phone,
-            reference_number: currentRef,
-            service:          currentFormData.service,
-            origin:           currentFormData.originFull,
-            destination:      currentFormData.destFull,
-            message:          currentFormData.message,
-            submitted_at:     submittedAt,
-            carrier:          selectedRate.carrier,
-            amount:           '$' + selectedRate.cpars_price.toFixed(2),
-            weight:           currentFormData.weightDisplay,
-            tracking_number:  trackingNumber || 'Pending carrier assignment',
-            status:           'CONFIRMED & PAID'
-          });
-
-          const requestData = { ...currentFormData, ref: currentRef, submittedAt, trackingNumber, carrier: selectedRate.carrier, amount: selectedRate.cpars_price };
-          saveRequest(requestData);
-          showConfirmation(requestData, trackingNumber);
-
-          document.getElementById('paymentPanel').style.display     = 'none';
-          document.getElementById('confirmationPanel').style.display = 'flex';
-          document.getElementById('confirmationPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-          dismissBanner();
         }
 
+        // STEP 5 — Send confirmation emails
+        payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending Confirmation...';
+        const submittedAt    = new Date().toLocaleString();
+        const trackingNote   = trackingNumber || (bookingFailed ? 'Booking error — CPARS will contact you within 1 hour' : 'Will be provided by carrier');
+        const ownerBookNote  = trackingNumber || (bookingFailed ? 'BOOKING FAILED AFTER PAYMENT — manual action required' : 'Pending carrier assignment');
+
+        await emailjs.send(EMAILJS_SERVICE, EMAILJS_CLIENT_TPL, {
+          name:             currentFormData.name,
+          email:            currentFormData.email,
+          reference_number: currentRef,
+          service:          currentFormData.service,
+          origin:           currentFormData.originFull,
+          destination:      currentFormData.destFull,
+          submitted_at:     submittedAt,
+          carrier:          selectedRate.carrier,
+          amount:           '$' + selectedRate.cpars_price.toFixed(2),
+          weight:           currentFormData.weightDisplay,
+          tracking_number:  trackingNote,
+          status:           'CONFIRMED & PAID'
+        });
+
+        await emailjs.send(EMAILJS_SERVICE, EMAILJS_OWNER_TPL, {
+          name:             currentFormData.name,
+          email:            currentFormData.email,
+          phone:            currentFormData.phone,
+          reference_number: currentRef,
+          service:          currentFormData.service,
+          origin:           currentFormData.originFull,
+          destination:      currentFormData.destFull,
+          message:          currentFormData.message + (bookingFailed ? '\n\n⚠️ BOOKING FAILED AFTER PAYMENT — manual action required' : ''),
+          submitted_at:     submittedAt,
+          carrier:          selectedRate.carrier,
+          amount:           '$' + selectedRate.cpars_price.toFixed(2),
+          weight:           currentFormData.weightDisplay,
+          tracking_number:  ownerBookNote,
+          status:           bookingFailed ? 'PAID — BOOKING FAILED' : 'CONFIRMED & PAID'
+        });
+
+        // STEP 6 — Save and show confirmation
+        const requestData = {
+          ...currentFormData,
+          ref:            currentRef,
+          submittedAt,
+          trackingNumber,
+          carrier:        selectedRate.carrier,
+          amount:         selectedRate.cpars_price,
+          bookingFailed
+        };
+        saveRequest(requestData);
+        showConfirmation(requestData, trackingNumber);
+
+        document.getElementById('paymentPanel').style.display     = 'none';
+        document.getElementById('confirmationPanel').style.display = 'flex';
+        document.getElementById('confirmationPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        dismissBanner();
+
       } catch (err) {
-        document.getElementById('card-errors').textContent = err.message || 'Payment failed. Please try again.';
-        payBtn.disabled = false;
-        payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay & Book Shipment';
+        showPaymentError(err.message || 'An unexpected error occurred. Please try again or call us at +1 (352) 213-8976.');
       }
     };
 
