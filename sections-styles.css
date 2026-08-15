@@ -792,3 +792,13 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* ── Navbar SVG Logo ─────────────────────────────── */
+.navbar-logo-img {
+  height: 44px;
+  width: auto;
+  display: block;
+}
+@media (max-width: 768px) {
+  .navbar-logo-img { height: 36px; }
+}
