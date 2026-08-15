@@ -79,7 +79,7 @@ exports.handler = async (event) => {
           tracking_number:  'Being arranged — you will receive tracking within 1 hour',
           status:           'CONFIRMED & PAID'
         });
-        console.log(`Client backup email | Status: ${clientResult.status} | Ref: ${ref} | To: ${email}`);
+        console.log(`Client backup email | Status: ${clientResult.status} | Body: ${clientResult.body} | Ref: ${ref} | To: ${email}`);
 
         // Always notify owner with full details
         await sendEmail(EMAILJS_SERVICE, EMAILJS_OWNER, EMAILJS_KEY, {
