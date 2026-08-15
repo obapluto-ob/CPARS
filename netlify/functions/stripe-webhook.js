@@ -65,7 +65,7 @@ exports.handler = async (event) => {
       if (email && EMAILJS_SERVICE && EMAILJS_CLIENT && EMAILJS_KEY) {
         const recoveryUrl = `https://cparstransportation.com/?recover=${ref}&email=${encodeURIComponent(email)}&amount=${encodeURIComponent(amount)}`;
 
-        // Always send backup confirmation to client
+        // Send confirmation + recovery URL to client
         const clientResult = await sendEmail(EMAILJS_SERVICE, EMAILJS_CLIENT, EMAILJS_KEY, {
           name:             data.metadata?.name || 'Valued Customer',
           email,
@@ -76,12 +76,12 @@ exports.handler = async (event) => {
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
-          tracking_number:  'Being arranged — you will receive tracking within 1 hour',
+          tracking_number:  recoveryUrl,
           status:           'CONFIRMED & PAID'
         });
-        console.log(`Client backup email | Status: ${clientResult.status} | Body: ${clientResult.body} | Ref: ${ref} | To: ${email}`);
+        console.log(`Client backup email | Status: ${clientResult.status} | Ref: ${ref} | To: ${email}`);
 
-        // Always notify owner with full details
+        // Notify owner with full client details
         await sendEmail(EMAILJS_SERVICE, EMAILJS_OWNER, EMAILJS_KEY, {
           name:             data.metadata?.name  || 'Client',
           email,
@@ -90,7 +90,7 @@ exports.handler = async (event) => {
           service,
           origin:           data.metadata?.origin      || 'Check Stripe',
           destination:      data.metadata?.destination || 'Check Stripe',
-          message:          'WEBHOOK CONFIRMED. Recovery URL: ' + recoveryUrl,
+          message:          'Payment confirmed via webhook. Verify booking in ShipStation.',
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
