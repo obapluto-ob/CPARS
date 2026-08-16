@@ -419,6 +419,15 @@
   .returning-inner { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 20px; }
   .returning-actions { width: 100%; justify-content: space-between; }
   .banner-btn-view { flex: 1; text-align: center; }
+  /* Track panel */
+  .track-fields { grid-template-columns: 1fr; }
+  /* Query panel */
+  .query-row { grid-template-columns: 1fr; }
+  /* Quotes + payment */
+  .quotes-panel, .payment-panel { padding: 20px 16px; }
+  /* Header buttons */
+  .header-btns { flex-direction: column; align-items: center; }
+  .track-toggle-btn { width: 100%; max-width: 320px; }
 }
 @media (max-width: 480px) {
   .why-grid        { grid-template-columns: 1fr; }
@@ -898,9 +907,31 @@
   .track-detail { border-right: none; }
 }
 
-/* ═══════════════════════════════
+/* ══════════════════════════════
+   QUERY PANEL
+══════════════════════════════ */
+.query-panel { border-color: #ede9fe; background: #faf5ff; }
+.query-panel .track-header i { color: #7c3aed; }
+.query-btn { border-color: #7c3aed !important; color: #7c3aed !important; }
+.query-btn:hover { background: #7c3aed !important; color: #fff !important; }
+.header-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.query-form { display: flex; flex-direction: column; gap: 14px; }
+.query-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.query-form select,
+.query-form textarea {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid #cbd5e1; border-radius: 8px;
+  font-size: 0.9rem; color: #1e293b; outline: none;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s; background: #fff;
+}
+.query-form select:focus,
+.query-form textarea:focus { border-color: #7c3aed; }
+.query-form textarea { resize: vertical; min-height: 100px; }
+
+/* ══════════════════════════════
    MOBILE FIXES
-═══════════════════════════════ */
+══════════════════════════════ */
 @media (max-width: 480px) {
   /* Quote cards — single column, no overflow */
   .quote-card {
@@ -908,39 +939,34 @@
     grid-template-rows: auto auto auto auto;
     column-gap: 10px;
   }
-  .quote-logo-box {
-    grid-column: 1; grid-row: 1 / 3;
-    width: 48px; height: 48px;
-  }
+  .quote-logo-box { grid-column: 1; grid-row: 1 / 3; width: 48px; height: 48px; }
   .quote-carrier-info { grid-column: 2; grid-row: 1; }
   .quote-tags         { grid-column: 2; grid-row: 2; }
-  .quote-price {
-    grid-column: 1 / 3; grid-row: 3;
-    text-align: left; font-size: 1.25rem;
-    padding-top: 4px;
-  }
+  .quote-price        { grid-column: 1 / 3; grid-row: 3; text-align: left; font-size: 1.25rem; padding-top: 4px; }
   .quote-select-btn   { grid-column: 1 / 3; grid-row: 4; }
 
-  /* Weight input — unit toggle wraps cleanly */
+  /* Weight input */
   .input-group label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .unit-toggle { margin-left: 0; }
   .weight-input-wrap { flex-direction: column; align-items: flex-start; gap: 6px; }
   .weight-input-wrap input { width: 100%; }
   .weight-converted { min-width: unset; }
 
-  /* Track panel button — full width */
+  /* Track + query buttons full width */
+  .header-btns { flex-direction: column; }
   .track-toggle-btn { width: 100%; text-align: center; justify-content: center; }
 
-  /* Payment summary — prevent text overflow */
+  /* Payment summary */
   .payment-summary .cdetail { flex-direction: column; align-items: flex-start; gap: 2px; }
   .payment-summary .cdetail strong { word-break: break-word; }
 
-  /* Ref number — smaller on tiny screens */
+  /* Ref number */
   .ref-number { font-size: 1rem; letter-spacing: 0.04em; }
 
-  /* Quotes/payment panels — tighter padding */
+  /* Panels tighter padding */
   .quotes-panel, .payment-panel { padding: 16px 14px; }
-
-  /* Track panel */
   .track-panel { padding: 18px 14px; }
+
+  /* Query form */
+  .query-row { grid-template-columns: 1fr; }
 }

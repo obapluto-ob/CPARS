@@ -490,9 +490,44 @@ body {
   .section           { padding: 72px 0; }
   .hero-trust-inner  { justify-content: center; gap: 16px 24px; }
   .hero-content      { padding-bottom: 160px; }
+  /* Slide image height */
+  .slide img { height: 300px; }
+  .hazmat-img img { height: 300px; }
+  /* About badge */
+  .about-badge-box { font-size: 0.8rem; padding: 9px 12px; }
+  /* Hero */
+  .hero-content { padding-top: 80px; }
+  .hero-content h1 { font-size: clamp(1.9rem, 6vw, 2.8rem); }
 }
 @media (max-width: 480px) {
+  .container { padding: 0 16px; }
   .stats-grid  { grid-template-columns: repeat(2, 1fr); }
   .hero-btns   { flex-direction: column; }
   .btn-primary, .btn-outline { text-align: center; justify-content: center; width: 100%; }
+  /* Hero text */
+  .hero-content h1 { font-size: 2rem; }
+  .hero-content p  { font-size: 0.95rem; }
+  /* Navbar */
+  .nav-inner { height: 60px; }
+  .navbar-logo-img { height: 32px; }
+  /* Stats */
+  .stat-num { font-size: 2rem; }
+  /* Section padding */
+  .section { padding: 56px 0; }
+  /* Footer */
+  .footer { padding: 48px 0 0; }
+  .footer-bottom { font-size: 0.75rem; padding: 16px; }
+  /* Cards */
+  .card { padding: 24px 18px; }
+  /* Contact form */
+  .contact-form { padding: 18px 14px; }
+  /* Confirmation */
+  .confirmation-panel { padding: 24px 14px; }
+  .confirm-icon i { font-size: 2.8rem; }
+  .confirmation-panel h3 { font-size: 1.15rem; }
+  /* Hero trust strip */
+  .hero-trust-item { font-size: 0.78rem; }
+  /* Section headers */
+  .section-header { margin-bottom: 40px; }
+  .section-header h2 { font-size: 1.6rem; }
 }

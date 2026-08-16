@@ -27,9 +27,14 @@
       <span class="tag">Contact Us</span>
       <h2>Get Your Instant Freight Quote</h2>
       <p>Fill out the form below and get real carrier rates instantly. Pick your quote and pay securely online.</p>
-      <button class="track-toggle-btn" onclick="toggleTrackPanel()">
-        <i class="fa-solid fa-magnifying-glass-location"></i> Track My Order
-      </button>
+      <div class="header-btns">
+        <button class="track-toggle-btn" onclick="toggleTrackPanel()">
+          <i class="fa-solid fa-magnifying-glass-location"></i> Track My Order
+        </button>
+        <button class="track-toggle-btn query-btn" onclick="toggleQueryPanel()">
+          <i class="fa-solid fa-circle-question"></i> Raise a Query
+        </button>
+      </div>
     </div>
 
     <!-- TRACK ORDER PANEL -->
@@ -56,6 +61,62 @@
           </button>
         </div>
         <div id="trackResult" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- QUERY / SUPPORT PANEL -->
+    <div id="queryPanel" class="track-panel query-panel" style="display:none;">
+      <div class="track-panel-inner">
+        <div class="track-header">
+          <i class="fa-solid fa-circle-question" style="color:#7c3aed"></i>
+          <div>
+            <h3>Raise a Query or Issue</h3>
+            <p>Have a problem with your shipment or a question? We respond within 2 hours.</p>
+          </div>
+        </div>
+        <div class="query-form">
+          <div class="query-row">
+            <div class="track-input-group">
+              <label>Full Name <span class="req">*</span></label>
+              <input type="text" id="q-name" placeholder="John Smith"/>
+            </div>
+            <div class="track-input-group">
+              <label>Email Address <span class="req">*</span></label>
+              <input type="email" id="q-email" placeholder="you@email.com"/>
+            </div>
+          </div>
+          <div class="query-row">
+            <div class="track-input-group">
+              <label>Phone Number</label>
+              <input type="tel" id="q-phone" placeholder="+1 (000) 000-0000"/>
+            </div>
+            <div class="track-input-group">
+              <label>Reference Number</label>
+              <input type="text" id="q-ref" placeholder="CPARS-XXXXXXXX (if you have one)"/>
+            </div>
+          </div>
+          <div class="track-input-group">
+            <label>Issue Type</label>
+            <select id="q-type">
+              <option value="">Select issue type</option>
+              <option>Tracking / Delivery Update</option>
+              <option>Payment Issue</option>
+              <option>Booking Problem</option>
+              <option>Damaged / Lost Shipment</option>
+              <option>Refund Request</option>
+              <option>General Question</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="track-input-group">
+            <label>Message <span class="req">*</span></label>
+            <textarea id="q-message" rows="4" placeholder="Describe your issue or question in detail..."></textarea>
+          </div>
+          <button class="btn-primary" id="queryBtn" onclick="submitQuery()">
+            <i class="fa-solid fa-paper-plane"></i> Submit Query
+          </button>
+        </div>
+        <div id="queryResult" style="display:none;"></div>
       </div>
     </div>
 

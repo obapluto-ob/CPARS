@@ -862,8 +862,10 @@
        TRACK ORDER
     ══════════════════════════════ */
     window.toggleTrackPanel = () => {
-      const panel = document.getElementById('trackPanel');
-      const isHidden = panel.style.display === 'none';
+      const panel      = document.getElementById('trackPanel');
+      const queryPanel = document.getElementById('queryPanel');
+      const isHidden   = panel.style.display === 'none';
+      if (queryPanel) queryPanel.style.display = 'none';
       panel.style.display = isHidden ? 'block' : 'none';
       if (isHidden) {
         panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -961,5 +963,87 @@
 
       btn.disabled  = false;
       btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Track Order';
+    };
+
+    /* ══════════════════════════════
+       QUERY / SUPPORT PANEL
+    ══════════════════════════════ */
+    window.toggleQueryPanel = () => {
+      const panel     = document.getElementById('queryPanel');
+      const trackPanel = document.getElementById('trackPanel');
+      const isHidden  = panel.style.display === 'none';
+      if (trackPanel) trackPanel.style.display = 'none';
+      panel.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const saved = loadRequest();
+        if (saved) {
+          if (saved.name)  document.getElementById('q-name').value  = saved.name;
+          if (saved.email) document.getElementById('q-email').value = saved.email;
+          if (saved.phone) document.getElementById('q-phone').value = saved.phone;
+          if (saved.ref)   document.getElementById('q-ref').value   = saved.ref;
+        }
+      }
+    };
+
+    window.submitQuery = async () => {
+      const btn     = document.getElementById('queryBtn');
+      const result  = document.getElementById('queryResult');
+      const name    = document.getElementById('q-name').value.trim();
+      const email   = document.getElementById('q-email').value.trim();
+      const message = document.getElementById('q-message').value.trim();
+
+      if (!name || !email || !message) {
+        result.style.display = 'block';
+        result.innerHTML = '<div class="track-error"><i class="fa-solid fa-circle-exclamation"></i><span>Please fill in your name, email and message.</span></div>';
+        return;
+      }
+
+      btn.disabled  = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+      result.style.display = 'none';
+
+      try {
+        const res  = await fetch('/.netlify/functions/submit-query', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            name,
+            email,
+            phone:      document.getElementById('q-phone').value.trim(),
+            ref:        document.getElementById('q-ref').value.trim(),
+            issue_type: document.getElementById('q-type').value,
+            message
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          result.style.display = 'block';
+          result.innerHTML = `
+            <div class="track-status-card" style="border-color:#7c3aed20">
+              <div class="track-status-header">
+                <div class="track-status-icon" style="background:#7c3aed">
+                  <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                  <h4 style="color:#7c3aed">Query Submitted!</h4>
+                  <p>We received your message and will respond to <strong>${email}</strong> within 2 hours. You can also call <strong>+1 (352) 213-8976</strong>.</p>
+                </div>
+              </div>
+            </div>`;
+          ['q-name','q-email','q-phone','q-ref','q-message'].forEach(id => { document.getElementById(id).value = ''; });
+          document.getElementById('q-type').value = '';
+        } else {
+          result.style.display = 'block';
+          result.innerHTML = `<div class="track-error"><i class="fa-solid fa-circle-exclamation"></i><span>${data.error || 'Something went wrong. Please try again or call us.'}</span></div>`;
+        }
+      } catch {
+        result.style.display = 'block';
+        result.innerHTML = '<div class="track-error"><i class="fa-solid fa-circle-exclamation"></i><span>Network error. Please try again or call +1 (352) 213-8976.</span></div>';
+      }
+
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Query';
     };
 
