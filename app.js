@@ -451,9 +451,11 @@
         { id: 'f-phone',        label: 'Phone Number' },
         { id: 'f-service',      label: 'Service Type' },
         { id: 'f-origin-street',label: 'Pickup Street Address' },
+        { id: 'f-origin-apt',   label: 'Pickup Apt / Suite / Unit' },
         { id: 'f-origin-city',  label: 'Pickup City, State' },
         { id: 'f-origin',       label: 'Pickup ZIP Code' },
         { id: 'f-dest-street',  label: 'Destination Street Address' },
+        { id: 'f-dest-apt',     label: 'Destination Apt / Suite / Unit' },
         { id: 'f-dest-city',    label: 'Destination City, State' },
         { id: 'f-destination',  label: 'Destination ZIP Code' },
         { id: 'f-weight',       label: 'Cargo Weight' },
@@ -564,7 +566,6 @@
         if (data.rates && data.rates.length > 0) {
           showQuotes(data.rates);
         } else {
-          // Fallback to estimated quotes if no live rates
           showEstimatedQuotes();
         }
       } catch {
@@ -577,34 +578,34 @@
     };
 
     function showEstimatedQuotes() {
-      // Fallback rate estimator based on ZIP distance approximation
-      const origin = parseInt(currentFormData.origin) || 77090;
-      const dest   = parseInt(currentFormData.destination) || 75201;
-      const weight = parseFloat(currentFormData.weight) || 500;
-      const zipDiff = Math.abs(origin - dest);
-      const estMiles = Math.max(50, Math.min(zipDiff * 0.8, 2000));
-
-      const rateMap = {
-        'Full Truckload (FTL)':       3.50,
-        'Less Than Truckload (LTL)':  2.50,
-        'Hotshot & Expedited':        4.50,
-        'Dry Van Transport':          3.00,
-        'Hazmat Transport':           5.00,
-        'Local & Regional Hauling':   2.80,
-        'Freight Coordination':       2.60,
-      };
-
-      const ratePerMile = rateMap[currentFormData.service] || 3.00;
-      const basePrice   = estMiles * ratePerMile;
-      const weightAdj   = weight > 1000 ? (weight / 1000) * 50 : 0;
-
-      const rates = [
-        { carrier: 'CPARS Standard',   service: currentFormData.service, delivery_days: '3-5', cpars_price: parseFloat((basePrice + weightAdj).toFixed(2)),        rate_id: 'est-standard', estimated: true },
-        { carrier: 'CPARS Express',    service: currentFormData.service, delivery_days: '1-2', cpars_price: parseFloat(((basePrice + weightAdj) * 1.35).toFixed(2)), rate_id: 'est-express',  estimated: true },
-        { carrier: 'CPARS Economy',    service: currentFormData.service, delivery_days: '5-7', cpars_price: parseFloat(((basePrice + weightAdj) * 0.85).toFixed(2)), rate_id: 'est-economy',  estimated: true },
-      ];
-
-      showQuotes(rates);
+      // ShipEngine returned no live rates — show contact-for-quote instead of fake prices
+      const list = document.getElementById('quotesList');
+      list.innerHTML = `
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:32px 24px;text-align:center;">
+          <i class="fa-solid fa-truck-moving" style="font-size:2.5rem;color:#3b82f6;margin-bottom:16px;display:block"></i>
+          <h3 style="color:#f1f5f9;font-size:1.1rem;margin-bottom:10px">Live Rates Unavailable Right Now</h3>
+          <p style="color:#94a3b8;font-size:0.88rem;line-height:1.7;max-width:420px;margin:0 auto 20px">
+            We couldn't fetch live carrier rates for this route at this moment.
+            This can happen if the route requires a freight quote or if our carrier connection needs a moment.
+          </p>
+          <p style="color:#f1f5f9;font-size:0.92rem;font-weight:600;margin-bottom:18px">
+            Call or email us — we'll give you an accurate quote within minutes.
+          </p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <a href="tel:+13522138976" class="btn-primary" style="padding:10px 22px;font-size:0.88rem">
+              <i class="fa-solid fa-phone"></i> Call +1 (352) 213-8976
+            </a>
+            <a href="mailto:cparstransportation@cparstransportationcom.com" class="btn-outline-dark" style="padding:10px 22px;font-size:0.88rem">
+              <i class="fa-solid fa-envelope"></i> Email Us
+            </a>
+          </div>
+        </div>
+      `;
+      window._currentRates = [];
+      setStep(2);
+      document.getElementById('quoteForm').style.display   = 'none';
+      document.getElementById('quotesPanel').style.display = 'block';
+      document.getElementById('quotesPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     /* Carrier logo map — real brand logos */
