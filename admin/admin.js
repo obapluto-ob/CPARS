@@ -99,7 +99,7 @@ async function loadActivity() {
     const res  = await fetch('/.netlify/functions/admin-shipments', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ admin_secret: adminSecret || 'readonly' })
+      body:    JSON.stringify({ admin_secret: userRole === 'readonly' ? 'cpars_readonly_2012' : adminSecret })
     });
     const data = await res.json();
 
