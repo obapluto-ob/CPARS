@@ -459,9 +459,24 @@
       globalpost:     { src: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/usps.svg', bg: '#004b87' },
     };
 
+    function setStep(n) {
+      for (let i = 1; i <= 4; i++) {
+        const step = document.getElementById('sp-' + i);
+        const line = document.getElementById('sp-line-' + i);
+        if (!step) continue;
+        step.classList.remove('active', 'done');
+        if (i < n)       step.classList.add('done');
+        else if (i === n) step.classList.add('active');
+        if (line) line.classList.toggle('done', i < n);
+      }
+    }
+
     function showQuotes(rates) {
       const list   = document.getElementById('quotesList');
       const weight = parseFloat(currentFormData.weight) || 0;
+
+      // Find max price for savings callout
+      const maxPrice = Math.max(...rates.map(r => r.cpars_price));
 
       const weightAlert = weight > 150
         ? `<div class="weight-alert"><i class="fa-solid fa-triangle-exclamation"></i><span>Your cargo weight (${weight} lbs) exceeds parcel carrier limits (150 lbs max per package). Showing estimated freight rates — a CPARS team member will confirm the final price within the hour.</span></div>`
@@ -474,6 +489,15 @@
         const badge     = isBest    ? '<span class="quote-badge badge-best"><i class="fa-solid fa-star"></i> Best Value</span>'
                         : isFastest ? '<span class="quote-badge badge-fast"><i class="fa-solid fa-bolt"></i> Fastest</span>' : '';
 
+        const savings = maxPrice - r.cpars_price;
+        const savingsHtml = savings > 0.5
+          ? `<span class="quote-savings">Save $${savings.toFixed(2)} vs most expensive</span>` : '';
+
+        // Estimated delivery date
+        const deliveryDate = r.delivery_days
+          ? (() => { const d = new Date(); d.setDate(d.getDate() + parseInt(r.delivery_days) + 1); return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); })()
+          : null;
+
         const logo    = CARRIER_LOGOS[r.carrier_code];
         const logoHtml = logo
           ? `<div class="quote-logo-box" style="background:${logo.bg}">
@@ -485,9 +509,11 @@
              </div>`;
 
         const deliveryLabel = r.delivery_label || (r.delivery_days ? `${r.delivery_days} business day(s)` : 'Contact for ETA');
+        const deliveryDateHtml = deliveryDate ? `<span class="qtag qtag-date"><i class="fa-solid fa-calendar-check"></i> Est. ${deliveryDate}</span>` : '';
 
         const tagHtml = [
           `<span class="qtag qtag-delivery"><i class="fa-solid fa-clock"></i> ${deliveryLabel}</span>`,
+          deliveryDateHtml,
           r.guaranteed ? `<span class="qtag qtag-guaranteed"><i class="fa-solid fa-shield-halved"></i> Guaranteed</span>` : '',
           r.trackable  ? `<span class="qtag qtag-trackable"><i class="fa-solid fa-location-dot"></i> Trackable</span>` : '',
           r.estimated  ? `<span class="qtag qtag-estimated"><i class="fa-solid fa-circle-info"></i> Estimated</span>` : ''
@@ -501,7 +527,10 @@
               <strong>${r.carrier}</strong>
               <span>${r.service}</span>
             </div>
-            <div class="quote-price">$${r.cpars_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div class="quote-price-col">
+              <div class="quote-price">$${r.cpars_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+              ${savingsHtml}
+            </div>
             <div class="quote-tags">${tagHtml}</div>
             <button class="btn-primary quote-select-btn">Select This Rate <i class="fa-solid fa-arrow-right"></i></button>
           </div>
@@ -509,6 +538,7 @@
       }).join('');
 
       window._currentRates = rates;
+      setStep(2);
       document.getElementById('quoteForm').style.display   = 'none';
       document.getElementById('quotesPanel').style.display = 'block';
       document.getElementById('quotesPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -522,11 +552,13 @@
     };
 
     window.backToForm = () => {
+      setStep(1);
       document.getElementById('quotesPanel').style.display = 'none';
       document.getElementById('quoteForm').style.display   = 'flex';
     };
 
     window.backToQuotes = () => {
+      setStep(2);
       document.getElementById('paymentPanel').style.display = 'none';
       document.getElementById('quotesPanel').style.display  = 'block';
     };
@@ -539,6 +571,7 @@
         alert('Payment system is still loading. Please wait a moment and try again.');
         return;
       }
+      setStep(3);
       document.getElementById('quotesPanel').style.display  = 'none';
       document.getElementById('paymentPanel').style.display = 'block';
 
@@ -791,6 +824,7 @@
         saveRequest(requestData);
         showConfirmation(requestData, trackingNumber);
 
+        setStep(4);
         document.getElementById('paymentPanel').style.display     = 'none';
         document.getElementById('confirmationPanel').style.display = 'flex';
         document.getElementById('confirmationPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -855,6 +889,7 @@
     window.resetForm = () => {
       clearRequest();
       selectedRate = null; currentRef = null; currentFormData = null;
+      setStep(1);
       document.getElementById('quoteForm').style.display        = 'flex';
       document.getElementById('quotesPanel').style.display      = 'none';
       document.getElementById('paymentPanel').style.display     = 'none';

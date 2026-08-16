@@ -98,6 +98,7 @@ async function loadActivity() {
     allShipments = data.shipments;
     window._stripeShipments = data.shipments;
     renderTable(allShipments);
+    updateTopbarStats(data);
 
   } catch (err) {
     errEl.style.display = 'block';
@@ -120,10 +121,11 @@ function renderTable(shipments) {
 
     const bkStatus = s.booking_status || 'pending';
     const bkClass  = bkStatus === 'booked' || bkStatus === 'delivered' ? 'bk-booked'
-                   : bkStatus === 'pending' ? 'bk-pending' : 'bk-pending';
+                   : bkStatus === 'refunded' ? 'bk-refunded' : 'bk-pending';
     const bkLabel  = bkStatus === 'booked'    ? '📦 Booked'
                    : bkStatus === 'delivered' ? '✅ Delivered'
                    : bkStatus === 'in_transit'? '🚚 In Transit'
+                   : bkStatus === 'refunded'  ? '↩️ Refunded'
                    : '⏳ Pending';
 
     const trackingHtml = s.tracking_number
@@ -155,7 +157,7 @@ function renderTable(shipments) {
     ].filter(Boolean).join('');
 
     return `
-      <tr>
+      <tr class="clickable-row" onclick="openDrawer(${origIdx})">
         <td><code style="font-size:0.78rem;color:#60a5fa">${s.ref}</code></td>
         <td>
           <div style="font-weight:600;color:#f1f5f9">${s.name}</div>
@@ -176,7 +178,7 @@ function renderTable(shipments) {
         <td><span class="pay-badge ${payClass}">${payLabel}</span></td>
         <td><span class="pay-badge ${bkClass}">${bkLabel}</span></td>
         <td style="font-size:0.75rem;color:#64748b;white-space:nowrap">${s.submittedAt}</td>
-        <td><div style="display:flex;flex-wrap:wrap;gap:4px">${actions}</div></td>
+        <td><div style="display:flex;flex-wrap:wrap;gap:4px" onclick="event.stopPropagation()">${actions}</div></td>
       </tr>
     `;
   }).join('');
@@ -558,4 +560,137 @@ function exportCSV() {
   a.download = `cpars-orders-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* ══════════════════════════════
+   TOPBAR MINI-STATS
+══════════════════════════════ */
+function updateTopbarStats(data) {
+  const el = document.getElementById('topbarStats');
+  if (!el) return;
+  document.getElementById('tmsRevenue').textContent = '$' + data.revenue.toFixed(2);
+  document.getElementById('tmsTotal').textContent   = data.total + ' orders';
+  const pending = (data.shipments || allShipments).filter(s => s.paid && s.booking_status === 'pending').length;
+  document.getElementById('tmsPending').textContent = pending + ' pending';
+  el.style.display = 'flex';
+}
+
+/* ══════════════════════════════
+   REFUNDED BADGE — patch renderTable
+   to show refunded status
+══════════════════════════════ */
+// Override bkLabel to include refunded
+const _origRenderTable = renderTable;
+// We patch inline below via the renderTable rewrite
+
+/* ══════════════════════════════
+   ORDER DETAIL DRAWER
+══════════════════════════════ */
+function openDrawer(index) {
+  const s = allShipments[index];
+  if (!s) return;
+
+  document.getElementById('drawerRef').textContent = s.ref;
+
+  const statusEl = document.getElementById('drawerStatus');
+  statusEl.textContent = s.paid ? '✅ Paid' : (s.status === 'canceled' ? '❌ Failed' : '⏳ Pending');
+  statusEl.className = 'pay-badge ' + (s.paid ? 'pay-succeeded' : s.status === 'canceled' ? 'pay-failed' : 'pay-pending');
+
+  const bk = s.booking_status || 'pending';
+  const bkLabel = bk === 'booked' ? '📦 Booked' : bk === 'delivered' ? '✅ Delivered' : bk === 'in_transit' ? '🚚 In Transit' : bk === 'refunded' ? '↩️ Refunded' : '⏳ Pending';
+
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="drawer-section">
+      <div class="drawer-row"><span>Reference</span><strong style="font-family:monospace;color:#60a5fa">${s.ref}</strong></div>
+      <div class="drawer-row"><span>Stripe ID</span><code style="font-size:0.75rem;color:#94a3b8">${s.stripe_id}</code></div>
+      <div class="drawer-row"><span>Date</span><strong>${s.submittedAt}</strong></div>
+      <div class="drawer-row"><span>Booking</span><strong>${bkLabel}</strong></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Client</div>
+      <div class="drawer-row"><span>Name</span><strong>${s.name}</strong></div>
+      <div class="drawer-row"><span>Email</span><strong>${s.email}</strong></div>
+      <div class="drawer-row"><span>Phone</span><strong>${s.phone}</strong></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Shipment</div>
+      <div class="drawer-row"><span>From</span><strong>${s.origin}</strong></div>
+      <div class="drawer-row"><span>To</span><strong>${s.destination}</strong></div>
+      <div class="drawer-row"><span>Carrier</span><strong>${s.carrier}</strong></div>
+      <div class="drawer-row"><span>Service</span><strong>${s.service}</strong></div>
+      <div class="drawer-row"><span>Weight</span><strong>${s.weight}</strong></div>
+      <div class="drawer-row"><span>Amount</span><strong style="color:#10b981;font-size:1.1rem">$${s.amount.toFixed(2)}</strong></div>
+    </div>
+    ${s.tracking_number ? `
+    <div class="drawer-section">
+      <div class="drawer-label">Tracking</div>
+      <div class="drawer-row"><span>Number</span><strong style="color:#34d399;font-family:monospace">${s.tracking_number}</strong></div>
+    </div>` : ''}
+    <div class="drawer-actions">
+      ${s.receipt_url ? `<a href="${s.receipt_url}" target="_blank" class="drawer-btn"><i class="fa-solid fa-receipt"></i> Receipt</a>` : ''}
+      ${s.label_url   ? `<a href="${s.label_url}"   target="_blank" class="drawer-btn"><i class="fa-solid fa-file-pdf"></i> Label PDF</a>` : ''}
+      ${s.paid && userRole === 'admin' ? `<button class="drawer-btn" onclick="closeDrawer();openRetryModal(${index})"><i class="fa-solid fa-rotate"></i> Retry</button>` : ''}
+      ${userRole === 'admin' ? `<button class="drawer-btn" onclick="closeDrawer();openTrackModal('${s.stripe_id}','${s.ref}')"><i class="fa-solid fa-pen"></i> Set Tracking</button>` : ''}
+      ${userRole === 'admin' ? `<button class="drawer-btn" onclick="closeDrawer();openEmailModal(${index})"><i class="fa-solid fa-envelope"></i> Email</button>` : ''}
+      ${s.paid && userRole === 'admin' && s.booking_status !== 'refunded' ? `<button class="drawer-btn danger" onclick="closeDrawer();openRefundModal('${s.stripe_id}','${s.ref}',${s.amount})"><i class="fa-solid fa-rotate-left"></i> Refund</button>` : ''}
+    </div>
+  `;
+
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('orderDrawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('orderDrawer').classList.remove('open');
+}
+
+/* ══════════════════════════════
+   AUTO-SYNC UNBOOKED ORDERS
+══════════════════════════════ */
+async function runAutoSync() {
+  const btn = document.getElementById('autoSyncBtn');
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+
+  try {
+    const res  = await fetch('/.netlify/functions/auto-sync', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ admin_secret: 'cpars_admin_token' })
+    });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    const list = document.getElementById('syncResult');
+    if (data.synced === 0 && data.skipped === 0) {
+      list.innerHTML = `<div class="sync-item info"><i class="fa-solid fa-circle-info"></i> ${data.message || 'No unbooked orders found.'}</div>`;
+    } else {
+      list.innerHTML = `
+        <div class="sync-summary">
+          <span class="sync-ok"><i class="fa-solid fa-circle-check"></i> ${data.synced} booked</span>
+          <span class="sync-skip"><i class="fa-solid fa-circle-xmark"></i> ${data.skipped} skipped</span>
+        </div>
+        ${(data.results || []).map(r => `
+          <div class="sync-item ${r.status === 'booked' ? 'ok' : 'fail'}">
+            <div>
+              <strong>${r.ref}</strong>
+              ${r.status === 'booked'
+                ? `<span style="color:#34d399"> — Booked: ${r.tracking_number}</span>`
+                : `<span style="color:#f87171"> — ${r.reason || r.status}</span>`}
+            </div>
+            ${r.label_url ? `<a href="${r.label_url}" target="_blank" style="color:#60a5fa;font-size:0.78rem;white-space:nowrap"><i class="fa-solid fa-file-pdf"></i> Label</a>` : ''}
+          </div>
+        `).join('')}
+      `;
+    }
+
+    document.getElementById('syncModal').classList.add('open');
+  } catch (err) {
+    alert('Auto-sync failed: ' + err.message);
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Sync Unbooked';
 }

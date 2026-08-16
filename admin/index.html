@@ -42,6 +42,13 @@
       <i class="fa-solid fa-truck-moving"></i>
       <span>CPARS Admin Portal</span>
     </div>
+    <div class="topbar-mini-stats" id="topbarStats" style="display:none;">
+      <div class="tms-item green"><i class="fa-solid fa-dollar-sign"></i><span id="tmsRevenue">$0</span></div>
+      <div class="tms-sep"></div>
+      <div class="tms-item blue"><i class="fa-solid fa-box"></i><span id="tmsTotal">0 orders</span></div>
+      <div class="tms-sep"></div>
+      <div class="tms-item yellow"><i class="fa-solid fa-clock"></i><span id="tmsPending">0 pending</span></div>
+    </div>
     <div class="topbar-right">
       <span class="topbar-badge" id="roleTag">Admin</span>
       <span class="topbar-badge" style="background:#1e3a8a"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Live</span>
@@ -118,6 +125,9 @@
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="action-btn retry admin-only" onclick="openRetryModal(null)">
           <i class="fa-solid fa-rotate"></i> Manual Retry
+        </button>
+        <button class="action-btn sync-btn admin-only" onclick="runAutoSync()" id="autoSyncBtn" title="Auto-book all paid unbooked orders">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Sync Unbooked
         </button>
         <button class="action-btn admin-only" onclick="exportCSV()" title="Export all orders to CSV">
           <i class="fa-solid fa-file-csv"></i> Export CSV
@@ -352,6 +362,30 @@
         <i class="fa-solid fa-rotate-left"></i> Issue Refund
       </button>
       <button class="btn-cancel" onclick="closeRefundModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="order-drawer" id="orderDrawer">
+  <div class="drawer-header">
+    <div>
+      <h3 id="drawerRef">Order Details</h3>
+      <span id="drawerStatus" class="pay-badge"></span>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<!-- Auto-Sync Result Modal -->
+<div class="modal-overlay" id="syncModal">
+  <div class="modal-box" style="max-width:520px;">
+    <h3><i class="fa-solid fa-wand-magic-sparkles" style="color:#10b981"></i> Auto-Sync Results</h3>
+    <div id="syncResult" class="sync-result-list"></div>
+    <div class="modal-btns">
+      <button class="btn-purple" onclick="document.getElementById('syncModal').classList.remove('open');loadActivity()" style="background:#10b981;">Done — Refresh Table</button>
     </div>
   </div>
 </div>

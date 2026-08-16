@@ -210,3 +210,109 @@ tr:hover td { background: #263348; }
   .filters-bar { flex-direction: column; }
   #searchInput, .filter-date, .filter-select { width: 100%; }
 }
+
+/* ── TOPBAR MINI-STATS ── */
+.topbar-mini-stats {
+  display: flex; align-items: center; gap: 12px;
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 10px; padding: 6px 16px;
+}
+.tms-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; }
+.tms-item i { font-size: 0.75rem; }
+.tms-item.green { color: #10b981; }
+.tms-item.blue  { color: #60a5fa; }
+.tms-item.yellow{ color: #fbbf24; }
+.tms-sep { width: 1px; height: 16px; background: #334155; }
+@media (max-width: 768px) { .topbar-mini-stats { display: none !important; } }
+
+/* ── CLICKABLE ROW ── */
+.clickable-row { cursor: pointer; }
+.clickable-row:hover td { background: #1e3a5f !important; }
+
+/* ── REFUNDED BADGE ── */
+.bk-refunded { background: #1c1917; color: #fb923c; }
+
+/* ── SYNC BTN ── */
+.action-btn.sync-btn { background: #065f46; color: #34d399; }
+.action-btn.sync-btn:hover { background: #047857; color: #fff; }
+
+/* ── SYNC RESULT ── */
+.sync-summary {
+  display: flex; gap: 16px; margin-bottom: 14px;
+  padding-bottom: 14px; border-bottom: 1px solid #334155;
+}
+.sync-ok   { color: #34d399; font-weight: 700; font-size: 0.9rem; }
+.sync-skip { color: #f87171; font-weight: 700; font-size: 0.9rem; }
+.sync-result-list { max-height: 340px; overflow-y: auto; }
+.sync-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; border-radius: 8px; margin-bottom: 8px;
+  font-size: 0.83rem;
+}
+.sync-item.ok   { background: #052e16; border: 1px solid #166534; }
+.sync-item.fail { background: #450a0a; border: 1px solid #991b1b; }
+.sync-item.info { background: #1e293b; border: 1px solid #334155; color: #94a3b8; }
+
+/* ── ORDER DETAIL DRAWER ── */
+.drawer-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 1000;
+}
+.drawer-overlay.open { display: block; }
+
+.order-drawer {
+  position: fixed; top: 0; right: -480px; width: 460px; max-width: 100vw;
+  height: 100vh; background: #1e293b; border-left: 1px solid #334155;
+  z-index: 1001; transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.order-drawer.open { right: 0; }
+
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-bottom: 1px solid #334155;
+  background: #0f172a; flex-shrink: 0;
+}
+.drawer-header h3 { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+.drawer-close {
+  background: #334155; border: none; color: #94a3b8;
+  width: 32px; height: 32px; border-radius: 8px;
+  cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.drawer-close:hover { background: #475569; color: #f1f5f9; }
+
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+.drawer-section {
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 12px; padding: 16px; margin-bottom: 14px;
+}
+.drawer-label {
+  font-size: 0.7rem; font-weight: 700; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+}
+.drawer-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid #1e293b; font-size: 0.83rem;
+}
+.drawer-row:last-child { border-bottom: none; }
+.drawer-row span  { color: #64748b; }
+.drawer-row strong{ color: #f1f5f9; font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
+
+.drawer-actions {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+}
+.drawer-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #334155; color: #cbd5e1; border: none;
+  padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: background 0.2s;
+}
+.drawer-btn:hover { background: #1a56db; color: #fff; }
+.drawer-btn.danger { background: #450a0a; color: #f87171; }
+.drawer-btn.danger:hover { background: #dc2626; color: #fff; }
+
+@media (max-width: 480px) {
+  .order-drawer { width: 100vw; }
+}

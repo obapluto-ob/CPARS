@@ -16,6 +16,14 @@
       <li><a href="#why">Why Us</a></li>
       <li><a href="#contact" class="btn-nav">Get a Quote</a></li>
     </ul>
+    <div class="nav-actions">
+      <button class="nav-track-btn" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'});setTimeout(()=>toggleTrackPanel(),600)">
+        <i class="fa-solid fa-magnifying-glass-location"></i> Track Order
+      </button>
+      <button class="nav-query-btn" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'});setTimeout(()=>toggleQueryPanel(),600)">
+        <i class="fa-solid fa-circle-question"></i> Support
+      </button>
+    </div>
     <button class="hamburger" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
   </div>
   <ul class="mobile-menu" id="mobileMenu">
@@ -27,5 +35,7 @@
     <li><a href="#fleet" onclick="toggleMenu()">Fleet</a></li>
     <li><a href="#why" onclick="toggleMenu()">Why Us</a></li>
     <li><a href="#contact" onclick="toggleMenu()">Get a Quote</a></li>
+    <li><a href="#contact" onclick="toggleMenu();setTimeout(()=>toggleTrackPanel(),600)"><i class="fa-solid fa-magnifying-glass-location"></i> Track Order</a></li>
+    <li><a href="#contact" onclick="toggleMenu();setTimeout(()=>toggleQueryPanel(),600)"><i class="fa-solid fa-circle-question"></i> Support</a></li>
   </ul>
 </nav>

@@ -27,14 +27,6 @@
       <span class="tag">Contact Us</span>
       <h2>Get Your Instant Freight Quote</h2>
       <p>Fill out the form below and get real carrier rates instantly. Pick your quote and pay securely online.</p>
-      <div class="header-btns">
-        <button class="track-toggle-btn" onclick="toggleTrackPanel()">
-          <i class="fa-solid fa-magnifying-glass-location"></i> Track My Order
-        </button>
-        <button class="track-toggle-btn query-btn" onclick="toggleQueryPanel()">
-          <i class="fa-solid fa-circle-question"></i> Raise a Query
-        </button>
-      </div>
     </div>
 
     <!-- TRACK ORDER PANEL -->
@@ -170,6 +162,29 @@
 
       <!-- RIGHT: Form / Quotes / Payment / Confirmation -->
       <div class="contact-form-wrap">
+
+        <!-- STEP PROGRESS BAR -->
+        <div class="step-progress" id="stepProgress">
+          <div class="sp-step active" id="sp-1">
+            <div class="sp-dot"><i class="fa-solid fa-file-lines"></i></div>
+            <span>Details</span>
+          </div>
+          <div class="sp-line" id="sp-line-1"></div>
+          <div class="sp-step" id="sp-2">
+            <div class="sp-dot"><i class="fa-solid fa-tags"></i></div>
+            <span>Quotes</span>
+          </div>
+          <div class="sp-line" id="sp-line-2"></div>
+          <div class="sp-step" id="sp-3">
+            <div class="sp-dot"><i class="fa-solid fa-credit-card"></i></div>
+            <span>Payment</span>
+          </div>
+          <div class="sp-line" id="sp-line-3"></div>
+          <div class="sp-step" id="sp-4">
+            <div class="sp-dot"><i class="fa-solid fa-circle-check"></i></div>
+            <span>Confirmed</span>
+          </div>
+        </div>
 
         <!-- STEP 1: FORM -->
         <form id="quoteForm" class="contact-form" onsubmit="return fetchQuotes(event)">
@@ -361,8 +376,13 @@
 
           <div class="confirm-contact">
             <p>Need help with your shipment?</p>
-            <a href="tel:+13522138976" class="btn-primary"><i class="fa-solid fa-phone"></i> Call +1 (352) 213-8976</a>
-            <a href="mailto:cparstransportation@cparstransportationcom.com" class="btn-outline-dark"><i class="fa-solid fa-envelope"></i> Email Us</a>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;width:100%;">
+              <a href="tel:+13522138976" class="btn-primary" style="flex:1;justify-content:center;"><i class="fa-solid fa-phone"></i> Call Us</a>
+              <a href="mailto:cparstransportation@cparstransportationcom.com" class="btn-outline-dark" style="flex:1;justify-content:center;"><i class="fa-solid fa-envelope"></i> Email Us</a>
+            </div>
+            <button class="btn-outline-dark" style="width:100%;justify-content:center;" onclick="toggleTrackPanel();document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
+              <i class="fa-solid fa-magnifying-glass-location"></i> Track This Shipment
+            </button>
           </div>
 
           <button class="new-request-btn" onclick="resetForm()">
