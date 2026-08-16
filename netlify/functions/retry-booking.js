@@ -133,12 +133,17 @@ exports.handler = async (event) => {
     const bookData = await bookRes.json();
 
     if (!bookRes.ok || bookData.errors?.length || !bookData.tracking_number) {
+      const rawErr  = bookData.errors?.[0]?.message || bookData.message || 'Booking failed';
+      const isLowBal = /insufficient|balance|funds|credit|payment required/i.test(rawErr);
       return {
         statusCode: 200,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          success: false,
-          error:   bookData.errors?.[0]?.message || 'Booking failed — try manually in ShipEngine'
+          success:         false,
+          insufficient_funds: isLowBal,
+          error: isLowBal
+            ? '⚠️ ShipEngine account has insufficient funds. Top up your ShipEngine balance at app.shipengine.com, then retry this booking.'
+            : rawErr
         })
       };
     }

@@ -262,6 +262,7 @@ tr:hover td { background: #263348; }
 }
 .sync-item.ok   { background: #052e16; border: 1px solid #166534; }
 .sync-item.fail { background: #450a0a; border: 1px solid #991b1b; }
+.sync-item.funds{ background: #1c1400; border: 1px solid #92400e; }
 .sync-item.info { background: #1e293b; border: 1px solid #334155; color: #94a3b8; }
 
 /* ── ORDER DETAIL DRAWER ── */

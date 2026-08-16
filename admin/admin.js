@@ -389,6 +389,23 @@ async function submitRetry() {
         ${data.label_url ? `<a href="${data.label_url}" target="_blank" style="color:#86efac;text-decoration:underline">📄 Download Label PDF</a>` : ''}
       `;
       setTimeout(() => { closeRetryModal(); loadActivity(); }, 3000);
+    } else if (data.insufficient_funds) {
+      result.className = 'modal-result error';
+      result.style.display = 'block';
+      result.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <i class="fa-solid fa-triangle-exclamation" style="color:#fbbf24;font-size:1.3rem;margin-top:2px;flex-shrink:0"></i>
+          <div>
+            <strong style="color:#fbbf24;display:block;margin-bottom:6px">ShipEngine — Insufficient Funds</strong>
+            Your ShipEngine account balance is too low to purchase this label.<br/>
+            <a href="https://app.shipengine.com" target="_blank"
+               style="color:#fbbf24;text-decoration:underline;font-weight:700;display:inline-flex;align-items:center;gap:5px;margin-top:8px">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Top Up Balance at ShipEngine
+            </a><br/>
+            <span style="font-size:0.8rem;color:#94a3b8;margin-top:6px;display:block">Once topped up, come back and click Retry Booking again.</span>
+          </div>
+        </div>
+      `;
     } else {
       result.className = 'modal-result error';
       result.style.display = 'block';
@@ -750,14 +767,17 @@ async function runAutoSync() {
           <span class="sync-skip"><i class="fa-solid fa-circle-xmark"></i> ${data.skipped} skipped</span>
         </div>
         ${(data.results || []).map(r => `
-          <div class="sync-item ${r.status === 'booked' ? 'ok' : 'fail'}">
+          <div class="sync-item ${r.status === 'booked' ? 'ok' : r.insufficient_funds ? 'funds' : 'fail'}">
             <div>
               <strong>${r.ref}</strong>
               ${r.status === 'booked'
                 ? `<span style="color:#34d399"> — Booked: ${r.tracking_number}</span>`
-                : `<span style="color:#f87171"> — ${r.reason || r.status}</span>`}
+                : r.insufficient_funds
+                  ? `<span style="color:#fbbf24"> — ⚠️ Insufficient ShipEngine funds</span>`
+                  : `<span style="color:#f87171"> — ${r.reason || r.status}</span>`}
             </div>
             ${r.label_url ? `<a href="${r.label_url}" target="_blank" style="color:#60a5fa;font-size:0.78rem;white-space:nowrap"><i class="fa-solid fa-file-pdf"></i> Label</a>` : ''}
+            ${r.insufficient_funds ? `<a href="https://app.shipengine.com" target="_blank" style="color:#fbbf24;font-size:0.78rem;white-space:nowrap"><i class="fa-solid fa-arrow-up-right-from-square"></i> Top Up</a>` : ''}
           </div>
         `).join('')}
       `;

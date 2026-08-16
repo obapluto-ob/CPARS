@@ -134,10 +134,16 @@ exports.handler = async (event) => {
         const bookData = await bookRes.json();
 
         if (!bookRes.ok || bookData.errors?.length || !bookData.tracking_number) {
-          const errMsg = bookData.errors?.[0]?.message || 'Booking failed';
-          // Detect insufficient balance
-          const isBalance = errMsg.toLowerCase().includes('balance') || errMsg.toLowerCase().includes('insufficient') || errMsg.toLowerCase().includes('funds');
-          results.push({ ref, status: 'failed', reason: isBalance ? 'Insufficient ShipEngine balance — top up your account' : errMsg });
+          const errMsg   = bookData.errors?.[0]?.message || bookData.message || 'Booking failed';
+          const isLowBal = /insufficient|balance|funds|credit|payment required/i.test(errMsg);
+          results.push({
+            ref,
+            status:             'failed',
+            insufficient_funds: isLowBal,
+            reason: isLowBal
+              ? 'Insufficient ShipEngine balance — top up at app.shipengine.com then retry'
+              : errMsg
+          });
           continue;
         }
 
