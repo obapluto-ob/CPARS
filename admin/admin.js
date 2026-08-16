@@ -759,7 +759,25 @@ function openDrawer(index) {
   const bk = s.booking_status || 'pending';
   const bkLabel = bk === 'booked' ? '📦 Booked' : bk === 'delivered' ? '✅ Delivered' : bk === 'in_transit' ? '🚚 In Transit' : bk === 'refunded' ? '↩️ Refunded' : '⏳ Pending';
 
-  document.getElementById('drawerBody').innerHTML = `
+  // Show address verification banner if paid but destination missing
+  const needsAddrVerify = s.paid && s.booking_status !== 'booked' && s.booking_status !== 'refunded' &&
+    (!s.destination || s.destination === '\u2014' || s.destination.startsWith('ZIP:') || s.destination === '');
+
+  const addrBanner = needsAddrVerify && userRole === 'admin' ? `
+    <div style="background:#7c1d1d;border:1px solid #ef4444;border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px;">
+      <i class="fa-solid fa-triangle-exclamation" style="color:#fca5a5;font-size:1.2rem;margin-top:2px;flex-shrink:0"></i>
+      <div style="flex:1">
+        <strong style="color:#fca5a5;display:block;margin-bottom:4px">Destination Address Missing</strong>
+        <span style="color:#fecaca;font-size:0.83rem">This paid order cannot be booked until the destination address is filled in. Click below to verify and save it.</span>
+        <div style="margin-top:10px">
+          <button class="drawer-btn" style="background:#ef4444;border-color:#ef4444;" onclick="closeDrawer();openRetryModal(${index})">
+            <i class="fa-solid fa-pen-to-square"></i> Fill Destination Address
+          </button>
+        </div>
+      </div>
+    </div>` : '';
+
+  document.getElementById('drawerBody').innerHTML = addrBanner + `
     <div class="drawer-section">
       <div class="drawer-row"><span>Reference</span><strong style="font-family:monospace;color:#60a5fa">${s.ref}</strong></div>
       <div class="drawer-row"><span>Stripe ID</span><code style="font-size:0.75rem;color:#94a3b8">${s.stripe_id}</code></div>

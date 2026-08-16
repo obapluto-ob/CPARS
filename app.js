@@ -273,13 +273,7 @@
           s.onerror = reject;
           document.head.appendChild(s);
         });
-        // Load Google Places dynamically if key provided
-        if (cfg.googlePlacesKey) {
-          const gScript = document.createElement('script');
-          gScript.src = `https://maps.googleapis.com/maps/api/js?key=${cfg.googlePlacesKey}&libraries=places`;
-          gScript.onload = initGooglePlaces;
-          document.head.appendChild(gScript);
-        }
+        // Address autocomplete uses free OpenStreetMap — no key needed
       } catch(e) {
         console.error('Config load failed', e);
       }
@@ -287,40 +281,90 @@
     initServices();
 
     /* ══════════════════════════════
-       GOOGLE PLACES AUTOCOMPLETE
+       FREE ADDRESS AUTOCOMPLETE
+       Uses OpenStreetMap Nominatim — no API key, no cost
     ══════════════════════════════ */
     function initGooglePlaces() {
-      setupPlaces('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status');
-      setupPlaces('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status');
+      // Called from config loader — wire up free autocomplete instead
+      setupFreeAutocomplete('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status', 'origin-hint');
+      setupFreeAutocomplete('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status', 'dest-hint');
+    }
+    // Also init immediately (no key needed)
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        setupFreeAutocomplete('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status', 'origin-hint');
+        setupFreeAutocomplete('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status', 'dest-hint');
+      }, 800);
+    });
+
+    const _acTimers = {};
+    const _acDropdowns = {};
+
+    function setupFreeAutocomplete(streetId, cityId, zipId, statusId, hintId) {
+      const input = document.getElementById(streetId);
+      if (!input) return;
+
+      // Create dropdown container
+      const drop = document.createElement('div');
+      drop.className = 'addr-dropdown';
+      drop.style.cssText = 'position:absolute;z-index:9999;background:#1e293b;border:1px solid #334155;border-radius:8px;width:100%;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);display:none;top:100%;left:0;';
+      input.parentNode.style.position = 'relative';
+      input.parentNode.appendChild(drop);
+      _acDropdowns[streetId] = drop;
+
+      input.addEventListener('input', () => {
+        clearTimeout(_acTimers[streetId]);
+        const q = input.value.trim();
+        if (q.length < 4) { drop.style.display = 'none'; return; }
+        _acTimers[streetId] = setTimeout(() => fetchAddressSuggestions(q, streetId, cityId, zipId, statusId), 350);
+      });
+
+      // Close dropdown on outside click
+      document.addEventListener('click', (e) => {
+        if (!input.parentNode.contains(e.target)) drop.style.display = 'none';
+      });
     }
 
-    function setupPlaces(streetId, cityId, zipId, statusId) {
-      const input = document.getElementById(streetId);
-      if (!input || !window.google) return;
-      const ac = new google.maps.places.Autocomplete(input, {
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'formatted_address'],
-        types: ['address']
-      });
-      ac.addListener('place_changed', () => {
-        const place = ac.getPlace();
-        if (!place.address_components) return;
-        let street = '', city = '', state = '', zip = '';
-        place.address_components.forEach(c => {
-          if (c.types.includes('street_number'))               street = c.long_name + ' ';
-          if (c.types.includes('route'))                       street += c.long_name;
-          if (c.types.includes('locality'))                    city   = c.long_name;
-          if (c.types.includes('administrative_area_level_1')) state  = c.short_name;
-          if (c.types.includes('postal_code'))                 zip    = c.long_name;
-        });
-        input.value = street;
-        document.getElementById(cityId).value = city + (state ? ', ' + state : '');
-        document.getElementById(zipId).value  = zip;
-        const statusEl = document.getElementById(statusId);
-        if (statusEl) { statusEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'; }
-        // Check same address after both filled
-        checkSameAddress();
-      });
+    async function fetchAddressSuggestions(query, streetId, cityId, zipId, statusId) {
+      const drop = _acDropdowns[streetId];
+      if (!drop) return;
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=us&limit=6&q=${encodeURIComponent(query)}`;
+        const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        const data = await res.json();
+        if (!data.length) { drop.style.display = 'none'; return; }
+
+        drop.innerHTML = data.map((item, i) => {
+          const a    = item.address || {};
+          const street = [(a.house_number || ''), (a.road || '')].filter(Boolean).join(' ');
+          const city   = a.city || a.town || a.village || a.county || '';
+          const state  = a.state_code || a.state || '';
+          const zip    = a.postcode || '';
+          const label  = item.display_name;
+          return `<div class="addr-drop-item" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #334155;font-size:0.85rem;color:#f1f5f9;line-height:1.4;"
+            onmousedown="fillAddress('${streetId}','${cityId}','${zipId}','${statusId}',
+              ${JSON.stringify(street)},${JSON.stringify(city)},${JSON.stringify(state)},${JSON.stringify(zip)})"
+            onmouseover="this.style.background='#334155'" onmouseout="this.style.background=''"
+          >${label}</div>`;
+        }).join('');
+        drop.style.display = 'block';
+      } catch { drop.style.display = 'none'; }
+    }
+
+    function fillAddress(streetId, cityId, zipId, statusId, street, city, state, zip) {
+      const drop = _acDropdowns[streetId];
+      if (drop) drop.style.display = 'none';
+      const streetEl = document.getElementById(streetId);
+      const cityEl   = document.getElementById(cityId);
+      const zipEl    = document.getElementById(zipId);
+      const statusEl = document.getElementById(statusId);
+      if (streetEl) streetEl.value = street;
+      if (cityEl)   cityEl.value   = city + (state ? ', ' + state : '');
+      if (zipEl)    zipEl.value    = zip;
+      if (statusEl) statusEl.innerHTML = zip
+        ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
+        : '<i class="fa-solid fa-circle-exclamation" style="color:#f59e0b"></i>';
+      checkSameAddress();
     }
 
     function checkSameAddress() {
