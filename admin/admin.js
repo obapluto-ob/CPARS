@@ -92,6 +92,7 @@ function doLogout() {
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(SESSION_ROLE);
   sessionStorage.removeItem('cpars_admin_secret');
+  localStorage.removeItem(REMEMBER_KEY);
   location.reload();
 }
 

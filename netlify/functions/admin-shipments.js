@@ -42,12 +42,12 @@ exports.handler = async (event) => {
         : '';
       const origin      = (meta.origin      && meta.origin      !== '' && meta.origin      !== '—') ? meta.origin      : (billingAddr || '—');
       // Destination: no billing fallback (billing = origin side). Show ZIP at minimum.
+      // ZIP fallback from address string — defined first so it can be used below
+      const extractZip = (str) => { const m = (str||'').match(/(\d{5})/); return m ? m[1] : '—'; };
+
       const destRaw     = (meta.destination && meta.destination !== '' && meta.destination !== '—') ? meta.destination : '';
       const destZipRaw  = (meta.destination_zip && meta.destination_zip !== '' && meta.destination_zip !== '—') ? meta.destination_zip : extractZip(destRaw);
       const destination = destRaw || (destZipRaw !== '—' ? 'ZIP: ' + destZipRaw : '—');
-
-      // ZIP fallback from address string
-      const extractZip = (str) => { const m = (str||'').match(/(\d{5})/); return m ? m[1] : '—'; };
       const origin_zip      = (meta.origin_zip      && meta.origin_zip      !== '' && meta.origin_zip      !== '—') ? meta.origin_zip      : extractZip(origin);
       const destination_zip = destZipRaw !== '—' ? destZipRaw : extractZip(destination);
 
