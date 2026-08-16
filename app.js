@@ -329,20 +329,21 @@
         const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
         const data = await res.json();
         if (!data.length) { drop.style.display = 'none'; return; }
-
-        drop.innerHTML = data.map((item, i) => {
-          const a    = item.address || {};
+        drop.innerHTML = '';
+        data.forEach(item => {
+          const a      = item.address || {};
           const street = [(a.house_number || ''), (a.road || '')].filter(Boolean).join(' ');
           const city   = a.city || a.town || a.village || a.county || '';
           const state  = a.state_code || a.state || '';
           const zip    = a.postcode || '';
-          const label  = item.display_name;
-          return `<div class="addr-drop-item" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #334155;font-size:0.85rem;color:#f1f5f9;line-height:1.4;"
-            onmousedown="fillAddress('${streetId}','${cityId}','${zipId}','${statusId}',
-              ${JSON.stringify(street)},${JSON.stringify(city)},${JSON.stringify(state)},${JSON.stringify(zip)})"
-            onmouseover="this.style.background='#334155'" onmouseout="this.style.background=''"
-          >${label}</div>`;
-        }).join('');
+          const div = document.createElement('div');
+          div.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid #334155;font-size:0.85rem;color:#f1f5f9;line-height:1.4;';
+          div.textContent = item.display_name;
+          div.addEventListener('mouseover', () => { div.style.background = '#334155'; });
+          div.addEventListener('mouseout',  () => { div.style.background = ''; });
+          div.addEventListener('mousedown', () => fillAddress(streetId, cityId, zipId, statusId, street, city, state, zip));
+          drop.appendChild(div);
+        });
         drop.style.display = 'block';
       } catch { drop.style.display = 'none'; }
     }
