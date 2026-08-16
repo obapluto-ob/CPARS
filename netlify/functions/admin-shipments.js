@@ -45,7 +45,15 @@ exports.handler = async (event) => {
         paid:        pi.status === 'succeeded',
         booking_status: meta.booking_status || 'pending',
         tracking_number: meta.tracking_number || null,
-        submittedAt: new Date(pi.created * 1000).toLocaleString(),
+        submittedAt: (() => {
+          const d = new Date(pi.created * 1000);
+          const dd = String(d.getDate()).padStart(2,'0');
+          const mm = String(d.getMonth()+1).padStart(2,'0');
+          const yyyy = d.getFullYear();
+          const hh = String(d.getHours()).padStart(2,'0');
+          const min = String(d.getMinutes()).padStart(2,'0');
+          return `${dd}/${mm}/${yyyy}, ${hh}:${min}`;
+        })(),
         stripe_id:   pi.id,
         receipt_url: receipt,
         weight:      meta.weight_declared ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}` : '—',

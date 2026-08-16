@@ -17,7 +17,7 @@ exports.handler = async (event) => {
 
   if (isRateLimited(event)) return rateLimitResponse();
 
-  const { amount, rate_id, customer_email, ref, carrier, service, weight_declared, weight_unit, weight_buffered_lbs, name, phone, origin, destination, origin_zip, destination_zip } = JSON.parse(event.body || '{}');
+  const { amount, rate_id, customer_email, ref, carrier, service, carrier_code, service_code, weight_declared, weight_unit, weight_buffered_lbs, name, phone, origin, destination, origin_zip, destination_zip } = JSON.parse(event.body || '{}');
 
   if (!amount || !customer_email || !ref) {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
@@ -34,7 +34,9 @@ exports.handler = async (event) => {
         cpars_ref:            ref,
         rate_id:              rate_id              || '',
         carrier:              carrier              || '',
+        carrier_code:         carrier_code         || '',
         service:              service              || '',
+        service_code:         service_code         || '',
         weight_declared:      String(weight_declared      || ''),
         weight_unit:          weight_unit          || 'lbs',
         weight_buffered_lbs:  String(weight_buffered_lbs  || ''),

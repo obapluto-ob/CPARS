@@ -14,11 +14,11 @@ function carrierLogoHtml(carrierCode, carrierName) {
   const key  = (carrierCode || carrierName || '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
   const logo = ADMIN_CARRIER_LOGOS[key] || ADMIN_CARRIER_LOGOS[Object.keys(ADMIN_CARRIER_LOGOS).find(k => key.includes(k)) || ''];
   if (logo && logo.src) {
-    return `<div class="admin-carrier-logo" style="background:${logo.bg}">
-      <img src="${logo.src}" alt="${carrierName}" onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-truck\'></i>'"/>
-    </div>`;
+    return '<div class="admin-carrier-logo" style="background:' + logo.bg + '">'
+      + '<img src="' + logo.src + '" alt="' + (carrierName||'') + '" onerror="this.style.display=\'none\'"/>'
+      + '</div>';
   }
-  return `<div class="admin-carrier-logo" style="background:#1e3a8a"><i class="fa-solid fa-truck"></i></div>`;
+  return '<div class="admin-carrier-logo" style="background:#1e3a8a"><i class="fa-solid fa-truck"></i></div>';
 }
 
 const ADMIN_USER   = 'cpars_admin';
