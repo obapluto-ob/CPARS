@@ -23,6 +23,7 @@
       initSlider();
       initNavbar();
       initContact();
+      initCounters();
       checkReturningUser();
     });
 
@@ -42,6 +43,33 @@
         dots[current].classList.add('active');
       };
       setInterval(() => window.goToSlide((current + 1) % slides.length), 3500);
+    }
+
+    /* ══════════════════════════════
+       COUNTERS
+    ══════════════════════════════ */
+    function initCounters() {
+      const counters = document.querySelectorAll('.counter-num');
+      if (!counters.length) return;
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const el     = entry.target;
+          const target = parseInt(el.dataset.target);
+          const dur    = 1800;
+          const step   = target / (dur / 16);
+          let current  = 0;
+          const tick = () => {
+            current += step;
+            if (current >= target) { el.textContent = target; return; }
+            el.textContent = Math.floor(current);
+            requestAnimationFrame(tick);
+          };
+          tick();
+          observer.unobserve(el);
+        });
+      }, { threshold: 0.4 });
+      counters.forEach(c => observer.observe(c));
     }
 
     /* ══════════════════════════════
