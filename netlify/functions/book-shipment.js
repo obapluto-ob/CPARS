@@ -29,7 +29,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 
-  const API_KEY = process.env.SHIPENGINE_API_KEY;
+  const API_KEY = process.env.SHIPSTATION_API_KEY;
 
   try {
     // ShipEngine — create label from rate_id

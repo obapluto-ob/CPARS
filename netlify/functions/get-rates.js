@@ -44,7 +44,7 @@ exports.handler = async (event) => {
     };
   }
 
-  const API_KEY = process.env.SHIPENGINE_API_KEY;
+  const API_KEY = process.env.SHIPSTATION_API_KEY;
 
   try {
     const res = await fetch('https://api.shipengine.com/v1/rates/estimate', {

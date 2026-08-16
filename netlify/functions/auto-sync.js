@@ -15,7 +15,7 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
-  const API_KEY = process.env.SHIPENGINE_API_KEY;
+  const API_KEY = process.env.SHIPSTATION_API_KEY;
 
   try {
     // Fetch last 100 paid intents — expand charge for billing fallback
