@@ -44,48 +44,51 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Name, email and message are required.' }) };
   }
 
-  const SERVICE  = process.env.EMAILJS_SERVICE_ID;
-  const OWNER    = process.env.EMAILJS_OWNER_TEMPLATE;
-  const CLIENT   = process.env.EMAILJS_CLIENT_TEMPLATE;
-  const KEY      = process.env.EMAILJS_PUBLIC_KEY;
+  const SERVICE     = process.env.EMAILJS_SERVICE_ID;
+  const OWNER_TPL   = process.env.EMAILJS_OWNER_TEMPLATE;
+  const CLIENT_TPL  = process.env.EMAILJS_CLIENT_TEMPLATE;
+  const KEY         = process.env.EMAILJS_PUBLIC_KEY;
   const submittedAt = new Date().toLocaleString();
 
+  // Map support fields onto existing template variables
+  const ownerParams = {
+    name,
+    email,
+    phone:            phone || 'Not provided',
+    reference_number: ref   || 'N/A',
+    service:          `⚠️ SUPPORT QUERY — ${issue_type || 'General'}`,
+    origin:           'N/A',
+    destination:      'N/A',
+    message:          `SUPPORT REQUEST\nIssue Type: ${issue_type || 'General'}\nReference: ${ref || 'N/A'}\n\n${message}`,
+    submitted_at:     submittedAt,
+    carrier:          'N/A',
+    amount:           'N/A',
+    tracking_number:  'N/A',
+    status:           '🆘 SUPPORT QUERY — ACTION REQUIRED'
+  };
+
+  const clientParams = {
+    name,
+    email,
+    phone:            phone || '',
+    reference_number: ref   || 'N/A',
+    service:          `Support Query — ${issue_type || 'General'}`,
+    origin:           'N/A',
+    destination:      'N/A',
+    message:          message,
+    submitted_at:     submittedAt,
+    carrier:          'CPARS Support Team',
+    amount:           'N/A',
+    tracking_number:  'We will respond to your email within 2 hours',
+    status:           '✅ QUERY RECEIVED — We will be in touch shortly'
+  };
+
   try {
-    // Notify owner
-    await sendEmail(SERVICE, OWNER, KEY, {
-      name,
-      email,
-      phone:            phone || 'Not provided',
-      reference_number: ref   || 'Not provided',
-      service:          `SUPPORT QUERY — ${issue_type || 'General'}`,
-      origin:           'N/A',
-      destination:      'N/A',
-      message:          `SUPPORT REQUEST\nType: ${issue_type || 'General'}\nRef: ${ref || 'N/A'}\n\n${message}`,
-      submitted_at:     submittedAt,
-      carrier:          'N/A',
-      amount:           'N/A',
-      tracking_number:  'N/A',
-      status:           'SUPPORT QUERY'
-    });
-
-    // Confirm to user
-    await sendEmail(SERVICE, CLIENT, KEY, {
-      name,
-      email,
-      reference_number: ref || 'N/A',
-      service:          `Support Query — ${issue_type || 'General'}`,
-      origin:           'N/A',
-      destination:      'N/A',
-      submitted_at:     submittedAt,
-      carrier:          'CPARS Support Team',
-      amount:           'N/A',
-      tracking_number:  'We will respond within 2 hours',
-      status:           'QUERY RECEIVED'
-    });
-
+    await sendEmail(SERVICE, OWNER_TPL,  KEY, ownerParams);
+    await sendEmail(SERVICE, CLIENT_TPL, KEY, clientParams);
     return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ success: true }) };
-
   } catch (err) {
+    console.error('submit-query error:', err.message);
     return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Failed to send query', details: err.message }) };
   }
 };
