@@ -2,36 +2,29 @@ const ADMIN_USER   = 'cpars_admin';
 const ADMIN_PASS   = 'CPARS@2025!secure';
 const BETH_CODE    = '2012';
 const SESSION_KEY  = 'cpars_admin_session';
-const SESSION_ROLE = 'cpars_admin_role'; // 'admin' or 'readonly'
+const SESSION_ROLE = 'cpars_admin_role';
 
-let adminSecret = '';
-let userRole    = 'readonly';
+let userRole = 'readonly';
 
 /* ══════════════════════════════
    LOGIN / LOGOUT
 ══════════════════════════════ */
 function doLogin() {
-  const u = document.getElementById('adminUser').value.trim();
-  const p = document.getElementById('adminPass').value.trim();
-  const s = document.getElementById('adminSecret').value.trim();
+  const u = (document.getElementById('adminUser').value || '').trim();
+  const p = (document.getElementById('adminPass').value || '').trim();
 
-  // Full admin login
   if (u === ADMIN_USER && p === ADMIN_PASS) {
-    adminSecret = s;
-    userRole    = 'admin';
+    userRole = 'admin';
     sessionStorage.setItem(SESSION_KEY,  'true');
     sessionStorage.setItem(SESSION_ROLE, 'admin');
-    sessionStorage.setItem('cpars_admin_secret', s);
     showDashboard();
     return;
   }
 
-  // Beth read-only passcode — just type anything in password field
   if (p === BETH_CODE || u === BETH_CODE) {
     userRole = 'readonly';
     sessionStorage.setItem(SESSION_KEY,  'true');
     sessionStorage.setItem(SESSION_ROLE, 'readonly');
-    sessionStorage.removeItem('cpars_admin_secret');
     showDashboard();
     return;
   }
@@ -66,14 +59,7 @@ function doLogout() {
 // Auto-login if session active
 (function autoLogin() {
   if (!sessionStorage.getItem(SESSION_KEY)) return;
-  const role = sessionStorage.getItem(SESSION_ROLE) || 'readonly';
-  userRole    = role;
-  adminSecret = sessionStorage.getItem('cpars_admin_secret') || '';
-
-  if (role === 'admin' && !adminSecret) {
-    sessionStorage.removeItem(SESSION_KEY);
-    return;
-  }
+  userRole = sessionStorage.getItem(SESSION_ROLE) || 'readonly';
   showDashboard();
 })();
 
@@ -88,18 +74,13 @@ async function loadActivity() {
   errEl.style.display = 'none';
   tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading from Stripe...</div></td></tr>';
 
-  if (userRole === 'admin' && !adminSecret) {
-    errEl.style.display = 'block';
-    errEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> No admin secret — please log out and log back in with your Admin Secret.';
-    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-lock"></i> Admin secret required</div></td></tr>';
-    return;
-  }
+  const secret = userRole === 'admin' ? 'cpars_admin_token' : 'cpars_readonly_2012';
 
   try {
     const res  = await fetch('/.netlify/functions/admin-shipments', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ admin_secret: userRole === 'readonly' ? 'cpars_readonly_2012' : adminSecret })
+      body:    JSON.stringify({ admin_secret: secret })
     });
     const data = await res.json();
 
@@ -275,7 +256,7 @@ async function submitRetry() {
   const result = document.getElementById('retryResult');
 
   const payload = {
-    admin_secret:    adminSecret,
+    admin_secret:    'cpars_admin_token',
     ref:             document.getElementById('r-ref').value.trim(),
     name:            document.getElementById('r-name').value.trim(),
     email:           document.getElementById('r-email').value.trim(),
@@ -370,7 +351,7 @@ async function submitTrackingEntry() {
     const res  = await fetch('/.netlify/functions/admin-set-tracking', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ admin_secret: adminSecret, stripe_id: stripeId, tracking_number: tracking })
+      body:    JSON.stringify({ admin_secret: 'cpars_admin_token', stripe_id: stripeId, tracking_number: tracking })
     });
     const data = await res.json();
 
