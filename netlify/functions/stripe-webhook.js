@@ -44,6 +44,20 @@ exports.handler = async (event) => {
   }
 
   const data         = stripeEvent.data.object;
+
+  // Expand latest charge to get billing_details as fallback for missing metadata
+  let charge = null;
+  try {
+    if (data.latest_charge) {
+      charge = typeof data.latest_charge === 'string'
+        ? await stripe.charges.retrieve(data.latest_charge)
+        : data.latest_charge;
+    } else if (data.object === 'charge') {
+      charge = data;
+    }
+  } catch(e) { console.warn('Could not retrieve charge:', e.message); }
+
+  const billing      = charge?.billing_details || {};
   const meta         = data.metadata || {};
   const ref          = meta.cpars_ref || 'N/A';
   const carrier      = meta.carrier   || 'N/A';
@@ -51,11 +65,17 @@ exports.handler = async (event) => {
   const amount       = data.amount_received
     ? '$' + (data.amount_received / 100).toFixed(2)
     : '$' + (data.amount / 100).toFixed(2);
-  const email        = data.receipt_email || meta.customer_email || null;
-  const clientName   = meta.name          || 'Valued Customer';
-  const clientPhone  = meta.phone         || 'N/A';
-  const originAddr   = meta.origin        || meta.origin_zip        || 'On file';
-  const destAddr     = meta.destination   || meta.destination_zip   || 'On file';
+  const email        = meta.customer_email || data.receipt_email || billing.email || null;
+  const clientName   = (meta.name  && meta.name  !== '') ? meta.name  : (billing.name  || 'Valued Customer');
+  const clientPhone  = (meta.phone && meta.phone !== '') ? meta.phone : (billing.phone || 'N/A');
+
+  // Build address fallback from billing_details.address
+  const billingAddrStr = billing.address
+    ? [billing.address.line1, billing.address.line2, billing.address.city,
+       billing.address.state, billing.address.postal_code].filter(Boolean).join(', ')
+    : '';
+  const originAddr   = (meta.origin      && meta.origin      !== '') ? meta.origin      : (billingAddrStr || meta.origin_zip      || 'On file');
+  const destAddr     = (meta.destination && meta.destination !== '') ? meta.destination : (meta.destination_zip || 'On file');
   const weightStr    = meta.weight_declared
     ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}`
     : (meta.weight_buffered_lbs ? `${meta.weight_buffered_lbs} lbs` : 'On file');
