@@ -436,3 +436,61 @@ tr:hover td { background: #263348; }
   tr { grid-template-columns: 1fr; }
   td:first-child, td:last-child { grid-column: 1; }
 }
+
+/* ── ADMIN GUIDE ── */
+.admin-guide {
+  background: #1e293b; border: 1px solid #1d4ed8;
+  border-radius: 14px; margin-bottom: 24px; overflow: hidden;
+}
+.guide-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; cursor: pointer; user-select: none;
+  transition: background 0.2s;
+}
+.guide-header:hover { background: #1e3a5f; }
+.guide-chevron { color: #64748b; font-size: 0.85rem; transition: transform 0.25s; }
+.guide-body { padding: 0 20px 20px; }
+
+.guide-step {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 0; border-bottom: 1px solid #1e3a5f;
+}
+.guide-step:last-of-type { border-bottom: none; }
+.guide-step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #1d4ed8; color: #fff;
+  font-size: 0.8rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  margin-top: 2px;
+}
+.guide-step strong { display: block; color: #f1f5f9; font-size: 0.88rem; margin-bottom: 5px; }
+.guide-step p { color: #94a3b8; font-size: 0.82rem; line-height: 1.6; }
+
+.guide-section-title {
+  font-size: 0.78rem; font-weight: 700; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin: 18px 0 10px;
+}
+.guide-issue {
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+.guide-issue strong { color: #fbbf24; display: block; margin-bottom: 3px; }
+.guide-issue span   { color: #94a3b8; }
+
+.guide-badge-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; color: #94a3b8;
+}
+
+.gbadge {
+  display: inline-block; padding: 2px 8px; border-radius: 6px;
+  font-size: 0.75rem; font-weight: 700; white-space: nowrap;
+}
+.gbadge.green  { background: #052e16; color: #34d399; }
+.gbadge.yellow { background: #2d1f00; color: #fbbf24; }
+.gbadge.purple { background: #3b0764; color: #c4b5fd; }
+.gbadge.blue   { background: #1e3a5f; color: #60a5fa; }
+.gbadge.red    { background: #450a0a; color: #f87171; }
+.gbadge.gray   { background: #334155; color: #cbd5e1; }

@@ -826,6 +826,29 @@ function closeDrawer() {
 /* ══════════════════════════════
    AUTO-SYNC UNBOOKED ORDERS
 ══════════════════════════════ */
+/* ══════════════════════════════
+   ADMIN GUIDE TOGGLE
+══════════════════════════════ */
+function toggleGuide() {
+  const body    = document.getElementById('guideBody');
+  const chevron = document.getElementById('guideChevron');
+  const open    = body.style.display === 'none';
+  body.style.display    = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
+  try { localStorage.setItem('cpars_guide_open', open ? '1' : '0'); } catch(e) {}
+}
+// Restore last state
+(function() {
+  try {
+    if (localStorage.getItem('cpars_guide_open') === '1') {
+      const body    = document.getElementById('guideBody');
+      const chevron = document.getElementById('guideChevron');
+      if (body)    body.style.display      = 'block';
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+    }
+  } catch(e) {}
+})();
+
 async function runAutoSync() {
   const btn = document.getElementById('autoSyncBtn');
   btn.disabled  = true;

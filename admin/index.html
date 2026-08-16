@@ -97,6 +97,104 @@
       </div>
     </div>
 
+    <!-- Admin Guide -->
+    <div class="admin-guide" id="adminGuide">
+      <div class="guide-header" onclick="toggleGuide()">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <i class="fa-solid fa-circle-info" style="color:#3b82f6;font-size:1.1rem"></i>
+          <strong style="color:#f1f5f9;font-size:0.95rem">📋 Admin Workflow Guide — How Everything Works</strong>
+          <span style="font-size:0.75rem;color:#64748b;margin-left:4px">(click to expand/collapse)</span>
+        </div>
+        <i class="fa-solid fa-chevron-down guide-chevron" id="guideChevron"></i>
+      </div>
+      <div class="guide-body" id="guideBody" style="display:none">
+
+        <div class="guide-step">
+          <div class="guide-step-num">1</div>
+          <div>
+            <strong>Customer pays on the website</strong>
+            <p>Customer fills the quote form → picks a carrier rate → pays by card. Payment goes straight to your Stripe account. You get an email alert automatically. The order appears in this table with <span class="gbadge green">✅ Paid</span> + <span class="gbadge yellow">⏳ Pending</span> booking status.</p>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-step-num">2</div>
+          <div>
+            <strong>Book the shipping label — Auto or Manual</strong>
+            <p><strong style="color:#34d399">Auto (recommended):</strong> Click <span class="gbadge purple">✨ Auto-Sync Unbooked</span> — it finds all paid unbooked orders and books labels automatically via ShipEngine. Takes ~10 seconds.</p>
+            <p style="margin-top:6px"><strong style="color:#fbbf24">Manual (if auto skips an order):</strong> Click the <span class="gbadge purple">🔄 Retry</span> button on the order row, fill in any missing address details, click <span class="gbadge blue">💾 Save Details to Stripe</span> first, then click <span class="gbadge purple">🔄 Retry Booking</span>.</p>
+            <p style="margin-top:6px"><strong style="color:#f87171">If skipped with "Missing destination ZIP":</strong> The customer didn't provide a full destination address. Open the order drawer (click the row), click the red banner → fill destination → Save → then Auto-Sync again.</p>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-step-num">3</div>
+          <div>
+            <strong>After booking — label is ready</strong>
+            <p>Once booked, the order shows <span class="gbadge blue">📦 Booked</span> and a tracking number appears. Click the <span class="gbadge gray">📄 Label PDF</span> button on the row or in the drawer to open/download the shipping label PDF.</p>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-step-num">4</div>
+          <div>
+            <strong>Print label → attach to package → hand to carrier</strong>
+            <p>Print the label PDF (4×6 or letter size). Stick it on the package. Then either:</p>
+            <ul style="margin-top:6px;padding-left:18px;color:#94a3b8;font-size:0.83rem;line-height:1.8">
+              <li><strong style="color:#f1f5f9">UPS:</strong> Schedule pickup at <a href="https://www.ups.com/us/en/support/schedule-pickup.page" target="_blank" style="color:#60a5fa">ups.com/pickup</a> or drop at any UPS Store</li>
+              <li><strong style="color:#f1f5f9">FedEx:</strong> Schedule at <a href="https://www.fedex.com/en-us/shipping/schedule-manage-pickups.html" target="_blank" style="color:#60a5fa">fedex.com/pickup</a> or drop at FedEx location</li>
+              <li><strong style="color:#f1f5f9">USPS:</strong> Free pickup at <a href="https://tools.usps.com/schedule-pickup-steps.htm" target="_blank" style="color:#60a5fa">usps.com/pickup</a> — they come to your door</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-step-num">5</div>
+          <div>
+            <strong>Email the customer (optional but recommended)</strong>
+            <p>Click the <span class="gbadge blue">✉️ Email</span> button on any order to send the customer their tracking number and a status update. The email is pre-filled — just add a message and hit Send.</p>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-step-num">6</div>
+          <div>
+            <strong>Refunds</strong>
+            <p>Click the <span class="gbadge red">↩️ Refund</span> button on a paid order. Leave the amount blank for a full refund, or enter a partial amount. The refund goes back to the customer's card via Stripe automatically.</p>
+          </div>
+        </div>
+
+        <div class="guide-section-title">🔴 Common Issues & Fixes</div>
+        <div class="guide-issue">
+          <strong>Auto-Sync says "Missing destination ZIP"</strong>
+          <span>→ Click the order row → red banner → Fill Destination Address → Save Details to Stripe → run Auto-Sync again</span>
+        </div>
+        <div class="guide-issue">
+          <strong>Auto-Sync says "Insufficient ShipEngine balance"</strong>
+          <span>→ Go to <a href="https://app.shipengine.com" target="_blank" style="color:#60a5fa">app.shipengine.com</a> → top up your balance → come back and run Auto-Sync again</span>
+        </div>
+        <div class="guide-issue">
+          <strong>Order is Paid but stuck on Pending for days</strong>
+          <span>→ Click the row → open Retry modal → verify all address fields are filled → click Retry Booking</span>
+        </div>
+        <div class="guide-issue">
+          <strong>Customer says they didn't get a tracking number email</strong>
+          <span>→ Find the order → click ✉️ Email → send them the tracking number manually</span>
+        </div>
+
+        <div class="guide-section-title">📊 What the Status Badges Mean</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
+          <div class="guide-badge-row"><span class="pay-badge pay-succeeded">✅ Paid</span><span>Card charged successfully</span></div>
+          <div class="guide-badge-row"><span class="pay-badge pay-pending">⏳ Pending</span><span>Payment not completed yet</span></div>
+          <div class="guide-badge-row"><span class="pay-badge pay-failed">❌ Failed</span><span>Card declined or cancelled</span></div>
+          <div class="guide-badge-row"><span class="pay-badge bk-pending">⏳ Pending</span><span>Paid but label not booked yet</span></div>
+          <div class="guide-badge-row"><span class="pay-badge bk-booked">📦 Booked</span><span>Label created, ready to ship</span></div>
+          <div class="guide-badge-row"><span class="pay-badge bk-refunded">↩️ Refunded</span><span>Money returned to customer</span></div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Quick Access -->
     <div class="section-title">Quick Access</div>
     <div class="quick-links">
