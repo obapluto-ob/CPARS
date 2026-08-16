@@ -38,6 +38,7 @@ exports.handler = async (event) => {
         origin:      meta.origin         || '—',
         destination: meta.destination    || '—',
         carrier:     meta.carrier        || '—',
+        carrier_code: meta.carrier_code   || '',
         service:     meta.service        || '—',
         amount:      pi.amount / 100,
         status:      pi.status,

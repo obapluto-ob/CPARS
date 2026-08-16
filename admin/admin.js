@@ -1,3 +1,26 @@
+/* ── Carrier logo map (admin) ── */
+const ADMIN_CARRIER_LOGOS = {
+  ups:            { src: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/UPS_Logo_Shield_2017.svg',           bg: '#301506' },
+  fedex_walleted: { src: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg', bg: '#4d148c' },
+  fedex:          { src: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg', bg: '#4d148c' },
+  stamps_com:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
+  usps:           { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
+  globalpost:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
+  dhl_express:    { src: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/DHL_Logo.svg',                      bg: '#FFCC00' },
+  dhl:            { src: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/DHL_Logo.svg',                      bg: '#FFCC00' },
+};
+
+function carrierLogoHtml(carrierCode, carrierName) {
+  const key  = (carrierCode || carrierName || '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  const logo = ADMIN_CARRIER_LOGOS[key] || ADMIN_CARRIER_LOGOS[Object.keys(ADMIN_CARRIER_LOGOS).find(k => key.includes(k)) || ''];
+  if (logo && logo.src) {
+    return `<div class="admin-carrier-logo" style="background:${logo.bg}">
+      <img src="${logo.src}" alt="${carrierName}" onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-truck\'></i>'"/>
+    </div>`;
+  }
+  return `<div class="admin-carrier-logo" style="background:#1e3a8a"><i class="fa-solid fa-truck"></i></div>`;
+}
+
 const ADMIN_USER   = 'cpars_admin';
 const ADMIN_PASS   = 'CPARS@2025!secure';
 const BETH_CODE    = '2012';
@@ -191,26 +214,31 @@ function renderTable(shipments) {
 
     return `
       <tr class="clickable-row" onclick="openDrawer(${origIdx})">
-        <td><code style="font-size:0.78rem;color:#60a5fa">${s.ref}</code></td>
-        <td>
+        <td data-label="Reference"><code style="font-size:0.78rem;color:#60a5fa">${s.ref}</code></td>
+        <td data-label="Client">
           <div style="font-weight:600;color:#f1f5f9">${s.name}</div>
           <div style="font-size:0.75rem;color:#64748b">${s.email}</div>
           <div style="font-size:0.75rem;color:#64748b">${s.phone}</div>
         </td>
-        <td>
+        <td data-label="Route">
           <div style="font-size:0.78rem">${s.origin}</div>
           <div style="font-size:0.78rem;color:#64748b">→ ${s.destination}</div>
         </td>
-        <td>
-          <div>${s.carrier}</div>
-          <div style="font-size:0.75rem;color:#64748b">${s.service}</div>
+        <td data-label="Carrier">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${carrierLogoHtml(s.carrier_code, s.carrier)}
+            <div>
+              <div>${s.carrier}</div>
+              <div style="font-size:0.75rem;color:#64748b">${s.service}</div>
+            </div>
+          </div>
         </td>
-        <td style="font-size:0.78rem">${s.weight}</td>
-        <td style="font-weight:700;color:#10b981">$${s.amount.toFixed(2)}</td>
-        <td>${trackingHtml}</td>
-        <td><span class="pay-badge ${payClass}">${payLabel}</span></td>
-        <td><span class="pay-badge ${bkClass}">${bkLabel}</span></td>
-        <td style="font-size:0.75rem;color:#64748b;white-space:nowrap">${s.submittedAt}</td>
+        <td data-label="Weight" style="font-size:0.78rem">${s.weight}</td>
+        <td data-label="Amount" style="font-weight:700;color:#10b981">$${s.amount.toFixed(2)}</td>
+        <td data-label="Tracking">${trackingHtml}</td>
+        <td data-label="Payment"><span class="pay-badge ${payClass}">${payLabel}</span></td>
+        <td data-label="Booking"><span class="pay-badge ${bkClass}">${bkLabel}</span></td>
+        <td data-label="Date" style="font-size:0.75rem;color:#64748b;white-space:nowrap">${s.submittedAt}</td>
         <td><div style="display:flex;flex-wrap:wrap;gap:4px" onclick="event.stopPropagation()">${actions}</div></td>
       </tr>
     `;
@@ -282,6 +310,22 @@ function openRetryModal(index) {
     document.getElementById('r-phone').value        = s.phone        !== '—' ? s.phone        : '';
     document.getElementById('r-origin-zip').value   = s.origin_zip   !== '—' ? s.origin_zip   : '';
     document.getElementById('r-dest-zip').value     = s.destination_zip !== '—' ? s.destination_zip : '';
+    // Parse street + city from full address string ("555 Butterfield Rd, Houston, TX, 77090")
+    const parseAddr = (full, zip) => {
+      if (!full || full === '—') return { street: '', city: '' };
+      const parts = full.split(',').map(p => p.trim()).filter(Boolean);
+      // Remove ZIP from end if present
+      const filtered = parts.filter(p => p !== zip);
+      const street = filtered[0] || '';
+      const city   = filtered.slice(1).join(', ');
+      return { street, city };
+    };
+    const orig = parseAddr(s.origin,      s.origin_zip);
+    const dest = parseAddr(s.destination, s.destination_zip);
+    document.getElementById('r-origin-street').value = orig.street;
+    document.getElementById('r-origin-city').value   = orig.city;
+    document.getElementById('r-dest-street').value   = dest.street;
+    document.getElementById('r-dest-city').value     = dest.city;
     const wParts = (s.weight || '').split(' ');
     document.getElementById('r-weight').value       = wParts[0] || '';
     document.getElementById('r-weight-unit').value  = wParts[1] || 'lbs';

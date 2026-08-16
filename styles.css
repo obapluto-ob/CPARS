@@ -490,44 +490,96 @@ body {
   .section           { padding: 72px 0; }
   .hero-trust-inner  { justify-content: center; gap: 16px 24px; }
   .hero-content      { padding-bottom: 160px; }
-  /* Slide image height */
   .slide img { height: 300px; }
   .hazmat-img img { height: 300px; }
-  /* About badge */
   .about-badge-box { font-size: 0.8rem; padding: 9px 12px; }
-  /* Hero */
   .hero-content { padding-top: 80px; }
   .hero-content h1 { font-size: clamp(1.9rem, 6vw, 2.8rem); }
 }
+
+/* ══════════════════════════════
+   MOBILE MENU — APP-LIKE OVERLAY
+══════════════════════════════ */
+@media (max-width: 900px) {
+  .mobile-menu {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15,23,42,0.97);
+    backdrop-filter: blur(16px);
+    z-index: 999;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    padding: 80px 0 40px;
+    overflow-y: auto;
+  }
+  .mobile-menu.open {
+    display: flex;
+    animation: menuSlideIn 0.25s ease;
+  }
+  @keyframes menuSlideIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .mobile-menu li { width: 100%; text-align: center; }
+  .mobile-menu li a {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 18px 28px;
+    color: #e2e8f0; font-size: 1.1rem; font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.18s, color 0.18s;
+    letter-spacing: 0.01em;
+  }
+  .mobile-menu li a:hover,
+  .mobile-menu li a:active { background: rgba(26,86,219,0.25); color: #7dd3fc; }
+  .mobile-menu li:last-child a { border-bottom: none; }
+  /* Close button inside menu */
+  .mobile-menu::before {
+    content: '✕';
+    position: fixed; top: 20px; right: 24px;
+    font-size: 1.4rem; color: rgba(255,255,255,0.5);
+    cursor: pointer; z-index: 1000;
+    pointer-events: none;
+  }
+  .hamburger {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; padding: 0;
+    border-radius: 10px;
+  }
+}
+
 @media (max-width: 480px) {
   .container { padding: 0 16px; }
   .stats-grid  { grid-template-columns: repeat(2, 1fr); }
   .hero-btns   { flex-direction: column; }
   .btn-primary, .btn-outline { text-align: center; justify-content: center; width: 100%; }
-  /* Hero text */
   .hero-content h1 { font-size: 2rem; }
   .hero-content p  { font-size: 0.95rem; }
-  /* Navbar */
   .nav-inner { height: 60px; }
   .navbar-logo-img { height: 32px; }
-  /* Stats */
   .stat-num { font-size: 2rem; }
-  /* Section padding */
   .section { padding: 56px 0; }
-  /* Footer */
   .footer { padding: 48px 0 0; }
   .footer-bottom { font-size: 0.75rem; padding: 16px; }
-  /* Cards */
   .card { padding: 24px 18px; }
-  /* Contact form */
   .contact-form { padding: 18px 14px; }
-  /* Confirmation */
   .confirmation-panel { padding: 24px 14px; }
   .confirm-icon i { font-size: 2.8rem; }
   .confirmation-panel h3 { font-size: 1.15rem; }
-  /* Hero trust strip */
   .hero-trust-item { font-size: 0.78rem; }
-  /* Section headers */
   .section-header { margin-bottom: 40px; }
   .section-header h2 { font-size: 1.6rem; }
+  /* Touch-friendly form inputs */
+  .contact-form input,
+  .contact-form select,
+  .contact-form textarea { font-size: 16px; padding: 14px; }
+  /* Bigger tap targets for buttons */
+  .btn-primary, .btn-full { min-height: 52px; font-size: 1rem; }
+  /* Hero trust items wrap nicely */
+  .hero-trust-inner { gap: 10px 20px; }
+  .hero-trust-item  { font-size: 0.75rem; }
+  /* Footer compact */
+  .footer-inner { gap: 24px; }
 }
