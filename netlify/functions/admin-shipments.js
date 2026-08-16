@@ -54,13 +54,14 @@ exports.handler = async (event) => {
     // Stats
     const paid      = shipments.filter(s => s.paid);
     const revenue   = paid.reduce((sum, s) => sum + s.amount, 0);
-    const pending   = shipments.filter(s => s.status === 'requires_payment_method').length;
-    const failed    = shipments.filter(s => s.status === 'canceled').length;
+    const pending   = shipments.filter(s => s.status === 'requires_payment_method' || s.status === 'requires_action').length;
+    const failed    = shipments.filter(s => s.status === 'canceled' || s.status === 'payment_failed').length;
+    const booked    = shipments.filter(s => s.booking_status === 'booked' || s.booking_status === 'delivered').length;
 
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ shipments, revenue, total: shipments.length, paid: paid.length, pending, failed })
+      body: JSON.stringify({ shipments, revenue, total: shipments.length, paid: paid.length, pending, failed, booked })
     };
 
   } catch (err) {

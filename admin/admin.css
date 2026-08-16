@@ -55,7 +55,7 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; color: #e2e8f0; mi
 
 /* ── STATS ── */
 .stats-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   gap: 16px; margin-bottom: 28px;
 }
 .stat-card {
@@ -69,6 +69,7 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; color: #e2e8f0; mi
 .stat-card.blue   .stat-value { color: #3b82f6; }
 .stat-card.yellow .stat-value { color: #fbbf24; }
 .stat-card.red    .stat-value { color: #f87171; }
+.stat-card.purple .stat-value { color: #a78bfa; }
 
 /* ── SECTION TITLE ── */
 .section-title {
@@ -179,10 +180,33 @@ tr:hover td { background: #263348; }
 }
 .btn-cancel:hover { background: #475569; color: #f1f5f9; }
 
+/* ── BOOKING STATUS BADGES ── */
+.bk-booked  { background: #1e3a5f; color: #60a5fa; }
+.bk-pending { background: #2d1f00; color: #fbbf24; }
+
+/* ── FILTERS BAR ── */
+.filters-bar {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 16px; align-items: center;
+}
+.filter-input {
+  background: #1e293b; border: 1.5px solid #334155;
+  border-radius: 8px; color: #f1f5f9;
+  padding: 8px 12px; font-size: 0.85rem; outline: none;
+  transition: border-color 0.2s;
+}
+.filter-input:focus { border-color: #3b82f6; }
+.filter-input::placeholder { color: #475569; }
+#searchInput { flex: 1; min-width: 220px; }
+.filter-date   { width: 150px; }
+.filter-select { width: 200px; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .stats-grid  { grid-template-columns: repeat(2, 1fr); }
   .quick-links { grid-template-columns: 1fr; }
   .dashboard-body { padding: 16px; }
   .modal-row { grid-template-columns: 1fr; }
+  .filters-bar { flex-direction: column; }
+  #searchInput, .filter-date, .filter-select { width: 100%; }
 }

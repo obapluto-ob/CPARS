@@ -21,14 +21,14 @@
       <p>Restricted access — authorized personnel only</p>
     </div>
     <div class="login-field">
-      <label>Username</label>
-      <input type="text" id="adminUser" placeholder="Enter username" autocomplete="off"/>
+      <label>Username <span style="color:#64748b;font-weight:400">(or leave blank for passcode)</span></label>
+      <input type="text" id="adminUser" placeholder="cpars_admin" autocomplete="off"/>
     </div>
     <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="adminPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <label>Password / Passcode</label>
+      <input type="password" id="adminPass" placeholder="Enter password or passcode" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
-    <div class="login-field">
+    <div class="login-field admin-only-field">
       <label>Admin Secret <span style="color:#64748b;font-weight:400">(for booking actions)</span></label>
       <input type="password" id="adminSecret" placeholder="Your ADMIN_SECRET value"/>
     </div>
@@ -47,7 +47,8 @@
       <span>CPARS Admin Portal</span>
     </div>
     <div class="topbar-right">
-      <span class="topbar-badge"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Live</span>
+      <span class="topbar-badge" id="roleTag">Admin</span>
+      <span class="topbar-badge" style="background:#1e3a8a"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Live</span>
       <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
     </div>
   </div>
@@ -71,6 +72,11 @@
         <div class="stat-value" id="statPaid">0</div>
         <div class="stat-sub">Succeeded payments</div>
       </div>
+      <div class="stat-card purple">
+        <div class="stat-label">Booked</div>
+        <div class="stat-value" id="statBooked">0</div>
+        <div class="stat-sub">Labels created</div>
+      </div>
       <div class="stat-card red">
         <div class="stat-label">Failed</div>
         <div class="stat-value" id="statFailed">0</div>
@@ -81,26 +87,41 @@
     <!-- Quick Access -->
     <div class="section-title">Quick Access</div>
     <div class="quick-links">
-      <a href="https://dashboard.stripe.com/payments" class="quick-link">
+      <a href="https://dashboard.stripe.com/payments" class="quick-link" target="_blank">
         <i class="fa-brands fa-stripe-s"></i>
         <div><strong>Stripe Payments</strong><span>View all payments & payouts</span></div>
       </a>
-      <a href="https://app.shipstation.com" class="quick-link">
+      <a href="https://app.shipengine.com" class="quick-link" target="_blank">
         <i class="fa-solid fa-box"></i>
-        <div><strong>ShipStation</strong><span>Manage shipments & labels</span></div>
+        <div><strong>ShipEngine</strong><span>Manage shipments & labels</span></div>
       </a>
-      <a href="https://dashboard.emailjs.com" class="quick-link">
+      <a href="https://dashboard.emailjs.com" class="quick-link" target="_blank">
         <i class="fa-solid fa-envelope"></i>
         <div><strong>EmailJS</strong><span>Email logs & templates</span></div>
       </a>
+    </div>
+
+    <!-- Search + Filters -->
+    <div class="filters-bar">
+      <input type="text" id="searchInput" class="filter-input" placeholder="🔍 Search by name, ref, email, tracking..." oninput="applyFilters()"/>
+      <input type="date" id="filterDateFrom" class="filter-input filter-date" onchange="applyFilters()" title="From date"/>
+      <input type="date" id="filterDateTo"   class="filter-input filter-date" onchange="applyFilters()" title="To date"/>
+      <select id="filterStatus" class="filter-input filter-select" onchange="applyFilters()">
+        <option value="">All Statuses</option>
+        <option value="paid">Paid</option>
+        <option value="failed">Failed</option>
+        <option value="booked">Booked</option>
+        <option value="pending">Paid — Pending Booking</option>
+      </select>
+      <button class="action-btn" onclick="clearFilters()"><i class="fa-solid fa-xmark"></i> Clear</button>
     </div>
 
     <!-- Activity Log -->
     <div class="section-title">
       <span><i class="fa-solid fa-list"></i> Live Activity — Stripe Orders</span>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button class="action-btn retry" onclick="openRetryModal(null)">
-          <i class="fa-solid fa-rotate"></i> Manual Retry Booking
+        <button class="action-btn retry admin-only" onclick="openRetryModal(null)">
+          <i class="fa-solid fa-rotate"></i> Manual Retry
         </button>
         <button class="action-btn" onclick="loadActivity()">
           <i class="fa-solid fa-rotate"></i> Refresh
@@ -122,12 +143,13 @@
             <th>Amount</th>
             <th>Tracking</th>
             <th>Payment</th>
+            <th>Booking</th>
             <th>Date</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="activityBody">
-          <tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div></td></tr>
+          <tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -139,7 +161,6 @@
 <div class="modal-overlay" id="retryModal">
   <div class="modal-box">
     <h3><i class="fa-solid fa-rotate" style="color:#7c3aed"></i> Retry / Manual Booking</h3>
-
     <div class="modal-row">
       <div class="modal-field">
         <label>Reference Number</label>
@@ -206,21 +227,41 @@
     <div class="modal-row">
       <div class="modal-field">
         <label>Carrier Code <span style="color:#64748b;font-weight:400">(optional)</span></label>
-        <input type="text" id="r-carrier-code" placeholder="ups / fedex_walleted / stamps_com"/>
+        <input type="text" id="r-carrier-code" placeholder="ups / fedex_walleted"/>
       </div>
       <div class="modal-field">
         <label>Service Code <span style="color:#64748b;font-weight:400">(optional)</span></label>
         <input type="text" id="r-service-code" placeholder="ups_ground"/>
       </div>
     </div>
-
     <div class="modal-result" id="retryResult"></div>
-
     <div class="modal-btns">
       <button class="btn-purple" id="retrySubmitBtn" onclick="submitRetry()">
         <i class="fa-solid fa-rotate"></i> Retry Booking
       </button>
       <button class="btn-cancel" onclick="closeRetryModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manual Tracking Entry Modal -->
+<div class="modal-overlay" id="trackModal">
+  <div class="modal-box" style="max-width:420px;">
+    <h3><i class="fa-solid fa-pen" style="color:#0ea5e9"></i> Set Tracking Number</h3>
+    <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:16px;">
+      Order: <strong id="tm-ref" style="color:#f1f5f9"></strong>
+    </p>
+    <input type="hidden" id="tm-stripe-id"/>
+    <div class="modal-field">
+      <label>Tracking Number</label>
+      <input type="text" id="tm-tracking" placeholder="e.g. 1Z999AA10123456784" autocomplete="off"/>
+    </div>
+    <div class="modal-result" id="trackModalResult"></div>
+    <div class="modal-btns">
+      <button class="btn-purple" id="trackSubmitBtn" onclick="submitTrackingEntry()" style="background:#0ea5e9;">
+        <i class="fa-solid fa-floppy-disk"></i> Save Tracking
+      </button>
+      <button class="btn-cancel" onclick="closeTrackModal()">Cancel</button>
     </div>
   </div>
 </div>
