@@ -18,8 +18,8 @@ exports.handler = async (event) => {
   const API_KEY = process.env.SHIPENGINE_API_KEY;
 
   try {
-    // Fetch last 100 paid intents
-    const intents = await stripe.paymentIntents.list({ limit: 100 });
+    // Fetch last 100 paid intents — expand charge for billing fallback
+    const intents = await stripe.paymentIntents.list({ limit: 100, expand: ['data.latest_charge'] });
 
     // Filter: succeeded + no tracking number + not refunded + not estimated-only
     const unbooked = intents.data.filter(pi => {
@@ -42,29 +42,55 @@ exports.handler = async (event) => {
     const results = [];
 
     for (const pi of unbooked) {
-      const meta = pi.metadata || {};
-      const ref  = meta.cpars_ref || pi.id;
+      const meta    = pi.metadata || {};
+      const charge  = pi.latest_charge;
+      const billing = (typeof charge === 'object' && charge) ? (charge.billing_details || {}) : {};
+      const ref     = meta.cpars_ref || pi.id;
 
-      // Can't book without a destination ZIP
-      // Try to extract from full address string if zip field is empty
-      let destZip = meta.destination_zip || '';
-      let originZip = meta.origin_zip || '77090';
-      if (!destZip && meta.destination) {
-        const m = meta.destination.match(/(\d{5})/);
-        if (m) destZip = m[1];
+      // ── Resolve name / phone with billing fallback ──
+      const shipName  = (meta.name  && meta.name  !== '') ? meta.name  : (billing.name  || 'Client');
+      const shipPhone = (meta.phone && meta.phone !== '') ? meta.phone : (billing.phone || '');
+
+      // ── Resolve origin ZIP + street ──
+      const extractZip = str => { const m = (str||'').match(/(\d{5})/); return m ? m[1] : ''; };
+      const parseStreet = str => {
+        if (!str || str === '') return '';
+        return str.split(',')[0].trim();
+      };
+
+      let originZip    = (meta.origin_zip && meta.origin_zip !== '') ? meta.origin_zip : '';
+      let originStreet = '';
+      if (meta.origin && meta.origin !== '') {
+        if (!originZip) originZip = extractZip(meta.origin);
+        originStreet = parseStreet(meta.origin);
       }
-      if (!originZip && meta.origin) {
-        const m = meta.origin.match(/(\d{5})/);
-        if (m) originZip = m[1];
+      // Billing address as last-resort origin fallback
+      if (!originZip && billing.address?.postal_code) {
+        originZip    = billing.address.postal_code;
+        originStreet = billing.address.line1 || '';
+      }
+      if (!originZip) originZip = '77090'; // CPARS default Houston
+
+      // ── Resolve destination ZIP + street ──
+      let destZip    = (meta.destination_zip && meta.destination_zip !== '') ? meta.destination_zip : '';
+      let destStreet = '';
+      let destCity   = '';
+      if (meta.destination && meta.destination !== '') {
+        if (!destZip) destZip = extractZip(meta.destination);
+        destStreet = parseStreet(meta.destination);
+        // city is second comma-part
+        const parts = meta.destination.split(',');
+        destCity = parts[1] ? parts[1].trim() : '';
       }
 
       if (!destZip) {
-        results.push({ ref, status: 'skipped', reason: 'Missing destination ZIP — use Manual Retry to fill in address details' });
+        results.push({ ref, status: 'skipped', reason: 'Missing destination ZIP — open Retry modal, fill destination address, click Save Details to Stripe, then run Auto-Sync again' });
         continue;
       }
 
       try {
         // Step 1 — get fresh rates for this route
+        const weightLbs = parseFloat(meta.weight_buffered_lbs || meta.weight_declared || 1);
         const ratesRes = await fetch('https://api.shipengine.com/v1/rates/estimate', {
           method:  'POST',
           headers: { 'API-Key': API_KEY, 'Content-Type': 'application/json' },
@@ -72,13 +98,13 @@ exports.handler = async (event) => {
             carrier_ids:         [],
             from_country_code:   'US',
             from_postal_code:    originZip,
-            from_city_locality:  '',
+            from_city_locality:  'Houston',
             from_state_province: 'TX',
             to_country_code:     'US',
             to_postal_code:      destZip,
-            to_city_locality:    '',
+            to_city_locality:    destCity || '',
             to_state_province:   '',
-            weight:     { value: parseFloat(meta.weight_buffered_lbs || meta.weight_declared || 1), unit: 'pound' },
+            weight:     { value: weightLbs, unit: 'pound' },
             dimensions: { unit: 'inch', length: 20, width: 15, height: 10 }
           })
         });
@@ -111,9 +137,10 @@ exports.handler = async (event) => {
             label_format:        'pdf',
             label_download_type: 'url',
             ship_to: {
-              name:          meta.name        || 'Client',
-              phone:         meta.phone       || '',
-              address_line1: '123 Main St',
+              name:          shipName,
+              phone:         shipPhone,
+              address_line1: destStreet || '123 Main St',
+              city_locality: destCity   || '',
               postal_code:   destZip,
               country_code:  'US',
               address_residential_indicator: 'unknown'
@@ -121,7 +148,7 @@ exports.handler = async (event) => {
             ship_from: {
               name:          'CPARS Transportation LLC',
               phone:         '+13522138976',
-              address_line1: '555 Butterfield Rd',
+              address_line1: originStreet || '555 Butterfield Rd',
               city_locality: 'Houston',
               state_province:'TX',
               postal_code:   originZip,
