@@ -21,13 +21,11 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Search Stripe payment intents by ref in metadata
-    const intents = await stripe.paymentIntents.search({
-      query: `metadata['cpars_ref']:'${ref}'`,
-      expand: ['data.latest_charge']
-    });
+    // Use list + find — avoids 30-60s search index delay
+    const intents = await stripe.paymentIntents.list({ limit: 100 });
+    const pi = intents.data.find(p => p.metadata?.cpars_ref === ref);
 
-    if (!intents.data.length) {
+    if (!pi) {
       return {
         statusCode: 200,
         headers: CORS_HEADERS,
@@ -35,9 +33,9 @@ exports.handler = async (event) => {
       };
     }
 
-    const pi     = intents.data[0];
     const meta   = pi.metadata || {};
-    const charge = pi.latest_charge;
+    const charge = await stripe.charges.list({ payment_intent: pi.id, limit: 1 })
+      .then(r => r.data[0]).catch(() => null);
 
     // Verify email matches — security check
     const storedEmail = (meta.customer_email || charge?.billing_details?.email || pi.receipt_email || '').toLowerCase().trim();
@@ -51,18 +49,15 @@ exports.handler = async (event) => {
 
     // Build accurate status
     let statusLabel, statusColor, statusIcon, statusMessage;
+    const trackingNumber = meta.tracking_number || null;
 
     if (pi.status === 'succeeded') {
-      // Payment went through — check if booking happened
-      const trackingNumber = meta.tracking_number || null;
-
       if (trackingNumber) {
         statusLabel   = 'Booked & In Transit';
         statusColor   = '#16a34a';
         statusIcon    = 'fa-truck-fast';
         statusMessage = 'Your shipment has been booked and is on its way.';
       } else {
-        // Paid but no tracking yet — this is the affected client scenario
         statusLabel   = 'Payment Confirmed — Booking Pending';
         statusColor   = '#d97706';
         statusIcon    = 'fa-clock';
@@ -84,20 +79,20 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers: CORS_HEADERS,
       body: JSON.stringify({
-        found:          true,
-        ref:            meta.cpars_ref    || ref,
-        name:           meta.name         || '—',
-        email:          storedEmail       || email,
-        carrier:        meta.carrier      || '—',
-        service:        meta.service      || '—',
-        origin:         meta.origin       || '—',
-        destination:    meta.destination  || '—',
-        weight:         meta.weight_declared ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}` : '—',
-        amount:         (pi.amount / 100).toFixed(2),
-        paid:           pi.status === 'succeeded',
-        tracking_number: meta.tracking_number || null,
-        receipt_url:    charge?.receipt_url   || null,
-        submittedAt:    new Date(pi.created * 1000).toLocaleString(),
+        found:           true,
+        ref:             meta.cpars_ref   || ref,
+        name:            meta.name        || '—',
+        email:           storedEmail      || email,
+        carrier:         meta.carrier     || '—',
+        service:         meta.service     || '—',
+        origin:          meta.origin      || '—',
+        destination:     meta.destination || '—',
+        weight:          meta.weight_declared ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}` : '—',
+        amount:          (pi.amount / 100).toFixed(2),
+        paid:            pi.status === 'succeeded',
+        tracking_number: trackingNumber,
+        receipt_url:     charge?.receipt_url || null,
+        submittedAt:     new Date(pi.created * 1000).toLocaleString(),
         statusLabel,
         statusColor,
         statusIcon,

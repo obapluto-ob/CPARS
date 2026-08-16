@@ -6,14 +6,6 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json'
 };
 
-// Carrier weight limits in lbs
-const CARRIERS = [
-  { id: 'se-6652340', name: 'UPS',        maxWeight: 150,  code: 'ups' },
-  { id: 'se-6652342', name: 'FedEx',      maxWeight: 150,  code: 'fedex_walleted' },
-  { id: 'se-6652339', name: 'Stamps.com', maxWeight: 70,   code: 'stamps_com' },
-  { id: 'se-6652341', name: 'GlobalPost', maxWeight: 70,   code: 'globalpost' },
-];
-
 const MARGIN = 0.20; // 20% CPARS margin
 
 exports.handler = async (event) => {
@@ -32,23 +24,19 @@ exports.handler = async (event) => {
     destination_zip, dest_street, dest_city, dest_state
   } = JSON.parse(event.body || '{}');
 
+  if (!weight || !origin_zip || !destination_zip) {
+    return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
+  }
+
   // Convert kg to lbs if needed
   const weightInLbs = weight_unit === 'kg'
     ? parseFloat((parseFloat(weight) * 2.20462).toFixed(2))
     : parseFloat(weight);
 
-  if (!weight || !origin_zip || !destination_zip) {
-    return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
-  }
+  // 10% weight buffer
+  const weightNum = parseFloat((weightInLbs * 1.10).toFixed(2));
 
-  // Add 10% weight buffer
-  const WEIGHT_BUFFER = 1.10;
-  const weightNum     = parseFloat((weightInLbs * WEIGHT_BUFFER).toFixed(2));
-  const API_KEY       = process.env.SHIPSTATION_API_KEY;
-
-  const eligibleCarriers = CARRIERS.filter(c => weightNum <= c.maxWeight);
-
-  if (eligibleCarriers.length === 0) {
+  if (weightNum > 150) {
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
@@ -56,65 +44,56 @@ exports.handler = async (event) => {
     };
   }
 
-  // Use POST /v2/rates with full shipment object — returns real bookable rate_ids
-  const shipmentBody = {
-    rate_options: { carrier_ids: eligibleCarriers.map(c => c.id) },
-    shipment: {
-      validate_address: 'no_validation',
-      ship_to: {
-        name:          'Recipient',
-        address_line1: dest_street   || '123 Main St',
-        city_locality: dest_city     || '',
-        state_province: dest_state   || '',
-        postal_code:   destination_zip,
-        country_code:  'US',
-        address_residential_indicator: 'unknown'
-      },
-      ship_from: {
-        name:          'CPARS Transportation LLC',
-        phone:         '+13522138976',
-        address_line1: origin_street || '555 Butterfield Rd',
-        city_locality: origin_city   || 'Houston',
-        state_province: origin_state || 'TX',
-        postal_code:   origin_zip,
-        country_code:  'US',
-        address_residential_indicator: 'no'
-      },
-      packages: [{
-        weight:     { value: weightNum, unit: 'pound' },
-        dimensions: { unit: 'inch', length: 20, width: 15, height: 10 }
-      }]
-    }
-  };
+  const API_KEY = process.env.SHIPENGINE_API_KEY;
 
-  const rateRequests = eligibleCarriers.map(carrier =>
-    fetch('https://api.shipstation.com/v2/rates', {
+  try {
+    const res = await fetch('https://api.shipengine.com/v1/rates/estimate', {
       method: 'POST',
-      headers: { 'API-Key': API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify(shipmentBody)
-    })
-    .then(r => r.json())
-    .then(data => ({ carrier, data: data.rate_response?.rates || data.rates || [] }))
-    .catch(() => null)
-  );
+      headers: {
+        'API-Key': API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        carrier_ids:       [], // empty = all connected carriers
+        from_country_code: 'US',
+        from_postal_code:  origin_zip,
+        from_city_locality: origin_city   || 'Houston',
+        from_state_province: origin_state || 'TX',
+        to_country_code:   'US',
+        to_postal_code:    destination_zip,
+        to_city_locality:  dest_city   || '',
+        to_state_province: dest_state  || '',
+        weight: { value: weightNum, unit: 'pound' },
+        dimensions: { unit: 'inch', length: 20, width: 15, height: 10 }
+      })
+    });
 
-  const results = await Promise.all(rateRequests);
+    const data = await res.json();
 
-  let rates = [];
-  results.forEach(result => {
-    if (!result || !Array.isArray(result.data)) return;
-    result.data.forEach(rate => {
+    if (!res.ok) {
+      console.error('ShipEngine rates error:', JSON.stringify(data));
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ rates: [], error: data.errors?.[0]?.message || 'Failed to fetch rates' })
+      };
+    }
+
+    // data is an array of rate objects
+    const rateList = Array.isArray(data) ? data : (data.rates || []);
+
+    let rates = [];
+    rateList.forEach(rate => {
       if (
         rate &&
-        rate.shipping_amount &&
-        rate.shipping_amount.amount > 0 &&
+        rate.shipping_amount?.amount > 0 &&
         rate.validation_status !== 'invalid' &&
-        rate.error_messages.length === 0
+        (!rate.error_messages || rate.error_messages.length === 0)
       ) {
         const base = rate.shipping_amount.amount;
         rates.push({
-          carrier:        rate.carrier_friendly_name || result.carrier.name,
-          carrier_code:   result.carrier.code,
+          carrier:        rate.carrier_friendly_name || rate.carrier_id,
+          carrier_code:   rate.carrier_id,
           service:        rate.service_type || 'Standard',
           service_code:   rate.service_code,
           delivery_days:  rate.delivery_days || null,
@@ -129,26 +108,31 @@ exports.handler = async (event) => {
         });
       }
     });
-  });
 
-  // Sort: cheapest first
-  rates.sort((a, b) => a.cpars_price - b.cpars_price);
+    // Sort cheapest first
+    rates.sort((a, b) => a.cpars_price - b.cpars_price);
 
-  // Tag best value and fastest
-  if (rates.length > 0) rates[0].tags = [...new Set([...rates[0].tags, 'best_value'])];
-  const fastest = [...rates].sort((a, b) => (a.delivery_days || 99) - (b.delivery_days || 99))[0];
-  if (fastest) fastest.tags = [...new Set([...fastest.tags, 'fastest'])];
+    if (rates.length > 0) rates[0].tags = [...new Set([...rates[0].tags, 'best_value'])];
+    const fastest = [...rates].sort((a, b) => (a.delivery_days || 99) - (b.delivery_days || 99))[0];
+    if (fastest) fastest.tags = [...new Set([...fastest.tags, 'fastest'])];
 
-  return {
-    statusCode: 200,
-    headers: CORS_HEADERS,
-    body: JSON.stringify({
-      rates,
-      eligible_carriers: eligibleCarriers.map(c => c.name),
-      weight_used:        weightNum,
-      weight_declared:    parseFloat(weight),
-      weight_unit:        weight_unit || 'lbs',
-      weight_buffered:    true
-    })
-  };
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        rates,
+        weight_used:     weightNum,
+        weight_declared: parseFloat(weight),
+        weight_unit:     weight_unit || 'lbs',
+        weight_buffered: true
+      })
+    };
+
+  } catch (err) {
+    return {
+      statusCode: 500,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: 'Rate fetch failed', details: err.message })
+    };
+  }
 };

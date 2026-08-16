@@ -38,12 +38,16 @@ exports.handler = async (event) => {
         carrier:     meta.carrier        || '—',
         service:     meta.service        || '—',
         amount:      pi.amount / 100,
-        status:      pi.status,           // succeeded / requires_payment_method / canceled
+        status:      pi.status,
         paid:        pi.status === 'succeeded',
+        booking_status: meta.booking_status || 'pending',
+        tracking_number: meta.tracking_number || null,
         submittedAt: new Date(pi.created * 1000).toLocaleString(),
         stripe_id:   pi.id,
         receipt_url: receipt,
         weight:      meta.weight_declared ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}` : '—',
+        origin_zip:      meta.origin_zip      || '—',
+        destination_zip: meta.destination_zip || '—',
       };
     });
 

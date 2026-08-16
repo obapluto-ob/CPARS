@@ -86,6 +86,9 @@ async function loadActivity() {
     tbody.innerHTML = data.shipments.map((s, i) => {
       const payClass = s.paid ? 'pay-succeeded' : (s.status === 'canceled' ? 'pay-failed' : 'pay-pending');
       const payLabel = s.paid ? '✅ Paid' : (s.status === 'canceled' ? '❌ Failed' : '⏳ Pending');
+      const trackingHtml = s.tracking_number
+        ? `<code style="font-size:0.75rem;color:#34d399">${s.tracking_number}</code>`
+        : `<span style="font-size:0.75rem;color:#f59e0b">Pending</span>`;
 
       const actions = [
         s.receipt_url
@@ -114,6 +117,7 @@ async function loadActivity() {
           </td>
           <td style="font-size:0.78rem">${s.weight}</td>
           <td style="font-weight:700;color:#10b981">$${s.amount.toFixed(2)}</td>
+          <td>${trackingHtml}</td>
           <td><span class="pay-badge ${payClass}">${payLabel}</span></td>
           <td style="font-size:0.75rem;color:#64748b;white-space:nowrap">${s.submittedAt}</td>
           <td>${actions}</td>
@@ -153,20 +157,15 @@ function openRetryModal(index) {
   if (index !== null && window._stripeShipments) {
     const s = window._stripeShipments[index];
     if (s) {
-      document.getElementById('r-ref').value   = s.ref   !== '—' ? s.ref   : '';
-      document.getElementById('r-name').value  = s.name  !== '—' ? s.name  : '';
-      document.getElementById('r-email').value = s.email !== '—' ? s.email : '';
-      document.getElementById('r-phone').value = s.phone !== '—' ? s.phone : '';
-      // Origin / dest are stored as full strings from Stripe metadata
-      // Admin can split them manually — we pre-fill what we have
-      const originParts = s.origin.split(',');
-      const destParts   = s.destination.split(',');
-      document.getElementById('r-origin-zip').value = originParts[originParts.length - 1]?.trim() || '';
-      document.getElementById('r-dest-zip').value   = destParts[destParts.length - 1]?.trim()   || '';
-      // Weight: "50 lbs" → split
-      const wParts = s.weight.split(' ');
-      document.getElementById('r-weight').value      = wParts[0] || '';
-      document.getElementById('r-weight-unit').value = wParts[1] || 'lbs';
+      document.getElementById('r-ref').value          = s.ref   !== '—' ? s.ref   : '';
+      document.getElementById('r-name').value         = s.name  !== '—' ? s.name  : '';
+      document.getElementById('r-email').value        = s.email !== '—' ? s.email : '';
+      document.getElementById('r-phone').value        = s.phone !== '—' ? s.phone : '';
+      document.getElementById('r-origin-zip').value   = s.origin_zip      !== '—' ? s.origin_zip      : '';
+      document.getElementById('r-dest-zip').value     = s.destination_zip !== '—' ? s.destination_zip : '';
+      const wParts = (s.weight || '').split(' ');
+      document.getElementById('r-weight').value       = wParts[0] || '';
+      document.getElementById('r-weight-unit').value  = wParts[1] || 'lbs';
     }
   }
 

@@ -628,7 +628,9 @@
               name:                currentFormData.name,
               phone:               currentFormData.phone,
               origin:              currentFormData.originFull,
-              destination:         currentFormData.destFull
+              destination:         currentFormData.destFull,
+              origin_zip:          currentFormData.origin,
+              destination_zip:     currentFormData.destination
             })
           });
           intentData = await intentRes.json();
@@ -731,21 +733,22 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                rate_id:         freshRateId,
-                ref:             currentRef,
-                name:            currentFormData.name,
-                email:           currentFormData.email,
-                phone:           currentFormData.phone,
-                origin_zip:      currentFormData.origin,
-                origin_street:   currentFormData.originStreet,
-                origin_city:     currentFormData.originCityOnly,
-                origin_state:    currentFormData.originState,
-                destination_zip: currentFormData.destination,
-                dest_street:     currentFormData.destStreet,
-                dest_city:       currentFormData.destCityOnly,
-                dest_state:      currentFormData.destState,
-                weight:          currentFormData.weight,
-                message:         currentFormData.message
+                rate_id:           freshRateId,
+                ref:               currentRef,
+                name:              currentFormData.name,
+                email:             currentFormData.email,
+                phone:             currentFormData.phone,
+                origin_zip:        currentFormData.origin,
+                origin_street:     currentFormData.originStreet,
+                origin_city:       currentFormData.originCityOnly,
+                origin_state:      currentFormData.originState,
+                destination_zip:   currentFormData.destination,
+                dest_street:       currentFormData.destStreet,
+                dest_city:         currentFormData.destCityOnly,
+                dest_state:        currentFormData.destState,
+                weight:            currentFormData.weight,
+                message:           currentFormData.message,
+                payment_intent_id: intentData.payment_intent_id
               })
             });
             const bookData = await bookRes.json();

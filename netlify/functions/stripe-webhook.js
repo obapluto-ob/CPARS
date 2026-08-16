@@ -63,9 +63,10 @@ exports.handler = async (event) => {
       console.log(`PAYMENT SUCCEEDED | Ref: ${ref} | ${amount} | Carrier: ${carrier} | Service: ${service} | Email: ${email}`);
 
       if (email && EMAILJS_SERVICE && EMAILJS_CLIENT && EMAILJS_KEY) {
-        const recoveryUrl = `https://cparstransportation.com/?recover=${ref}&email=${encodeURIComponent(email)}&amount=${encodeURIComponent(amount)}`;
+        const trackingNumber = data.metadata?.tracking_number || null;
+        const recoveryUrl    = `https://cparstransportation.com/?track=${ref}&email=${encodeURIComponent(email)}`;
 
-        // Send confirmation + recovery URL to client
+        // Send confirmation to client
         const clientResult = await sendEmail(EMAILJS_SERVICE, EMAILJS_CLIENT, EMAILJS_KEY, {
           name:             data.metadata?.name || 'Valued Customer',
           email,
@@ -76,12 +77,13 @@ exports.handler = async (event) => {
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
-          tracking_number:  recoveryUrl,
+          tracking_number:  trackingNumber || 'Being arranged — will be emailed within 1 hour',
+          recovery_url:     recoveryUrl,
           status:           'CONFIRMED & PAID'
         });
-        console.log(`Client backup email | Status: ${clientResult.status} | Ref: ${ref} | To: ${email}`);
+        console.log(`Client email | Status: ${clientResult.status} | Ref: ${ref} | To: ${email}`);
 
-        // Notify owner with full client details
+        // Notify owner
         await sendEmail(EMAILJS_SERVICE, EMAILJS_OWNER, EMAILJS_KEY, {
           name:             data.metadata?.name  || 'Client',
           email,
@@ -90,13 +92,13 @@ exports.handler = async (event) => {
           service,
           origin:           data.metadata?.origin      || 'Check Stripe',
           destination:      data.metadata?.destination || 'Check Stripe',
-          message:          'Payment confirmed via webhook. Verify booking in ShipStation.',
+          message:          'Payment confirmed via webhook. Verify booking in ShipEngine.',
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
-          tracking_number:  'Pending — book manually if not auto-booked',
-          status:           'CONFIRMED & PAID — VERIFY BOOKING'
-        }).catch(e => console.warn('Owner backup email failed:', e));
+          tracking_number:  trackingNumber || 'Pending — book manually if not auto-booked',
+          status:           trackingNumber ? 'CONFIRMED & PAID — BOOKED' : 'CONFIRMED & PAID — VERIFY BOOKING'
+        }).catch(e => console.warn('Owner email failed:', e));
       }
       break;
     }

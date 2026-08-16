@@ -1,4 +1,5 @@
 const { isRateLimited, rateLimitResponse } = require('./utils/rateLimit');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -18,19 +19,21 @@ exports.handler = async (event) => {
 
   const {
     rate_id, ref, name, email, phone,
-    origin_zip, destination_zip, weight, message,
+    origin_zip, destination_zip, weight,
     origin_street, origin_city, origin_state,
-    dest_street, dest_city, dest_state
+    dest_street, dest_city, dest_state,
+    payment_intent_id
   } = JSON.parse(event.body || '{}');
 
   if (!rate_id || !origin_zip || !destination_zip) {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 
-  const API_KEY = process.env.SHIPSTATION_API_KEY;
+  const API_KEY = process.env.SHIPENGINE_API_KEY;
 
   try {
-    const res = await fetch(`https://api.shipstation.com/v2/labels/rates/${rate_id}`, {
+    // ShipEngine — create label from rate_id
+    const res = await fetch(`https://api.shipengine.com/v1/labels/rates/${rate_id}`, {
       method: 'POST',
       headers: { 'API-Key': API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -39,23 +42,23 @@ exports.handler = async (event) => {
         label_format:        'pdf',
         label_download_type: 'url',
         ship_to: {
-          name:                          name        || 'Client',
-          phone:                         phone       || '',
-          address_line1:                 dest_street || '123 Main St',
-          city_locality:                 dest_city   || '',
-          state_province:                dest_state  || '',
-          postal_code:                   destination_zip,
-          country_code:                  'US',
+          name:          name        || 'Client',
+          phone:         phone       || '',
+          address_line1: dest_street || '123 Main St',
+          city_locality: dest_city   || '',
+          state_province: dest_state || '',
+          postal_code:   destination_zip,
+          country_code:  'US',
           address_residential_indicator: 'unknown'
         },
         ship_from: {
-          name:                          'CPARS Transportation LLC',
-          phone:                         '+13522138976',
-          address_line1:                 origin_street || '555 Butterfield Rd',
-          city_locality:                 origin_city   || 'Houston',
-          state_province:                origin_state  || 'TX',
-          postal_code:                   origin_zip,
-          country_code:                  'US',
+          name:          'CPARS Transportation LLC',
+          phone:         '+13522138976',
+          address_line1: origin_street || '555 Butterfield Rd',
+          city_locality: origin_city   || 'Houston',
+          state_province: origin_state || 'TX',
+          postal_code:   origin_zip,
+          country_code:  'US',
           address_residential_indicator: 'no'
         }
       })
@@ -63,7 +66,7 @@ exports.handler = async (event) => {
 
     const data = await res.json();
 
-    if (!res.ok) {
+    if (!res.ok || data.errors?.length) {
       return {
         statusCode: 200,
         headers: CORS_HEADERS,
@@ -76,14 +79,33 @@ exports.handler = async (event) => {
       };
     }
 
+    const trackingNumber = data.tracking_number || null;
+    const labelUrl       = data.label_download?.href || null;
+    const shipmentId     = data.shipment_id || null;
+
+    // Save tracking number back to Stripe metadata so client can track
+    if (trackingNumber && payment_intent_id) {
+      try {
+        await stripe.paymentIntents.update(payment_intent_id, {
+          metadata: {
+            tracking_number: trackingNumber,
+            booking_status:  'booked',
+            shipment_id:     shipmentId || ''
+          }
+        });
+      } catch (e) {
+        console.warn('Failed to update Stripe metadata:', e.message);
+      }
+    }
+
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
       body: JSON.stringify({
         success:         true,
-        tracking_number: data.tracking_number  || null,
-        label_url:       data.label_download?.href || null,
-        shipment_id:     data.shipment_id      || null
+        tracking_number: trackingNumber,
+        label_url:       labelUrl,
+        shipment_id:     shipmentId
       })
     };
 
