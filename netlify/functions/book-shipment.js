@@ -90,7 +90,8 @@ exports.handler = async (event) => {
           metadata: {
             tracking_number: trackingNumber,
             booking_status:  'booked',
-            shipment_id:     shipmentId || ''
+            shipment_id:     shipmentId || '',
+            label_url:       labelUrl   || ''
           }
         });
       } catch (e) {

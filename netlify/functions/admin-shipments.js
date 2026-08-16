@@ -50,6 +50,7 @@ exports.handler = async (event) => {
         weight:      meta.weight_declared ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}` : '—',
         origin_zip:      meta.origin_zip      || '—',
         destination_zip: meta.destination_zip || '—',
+        label_url:       meta.label_url       || null,
       };
     });
 

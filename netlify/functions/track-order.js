@@ -87,7 +87,9 @@ exports.handler = async (event) => {
         service:         meta.service     || '—',
         origin:          meta.origin      || '—',
         destination:     meta.destination || '—',
-        weight:          meta.weight_declared ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}` : '—',
+        weight:          meta.weight_declared
+          ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}`
+          : (meta.weight_buffered_lbs ? `${meta.weight_buffered_lbs} lbs` : '—'),
         amount:          (pi.amount / 100).toFixed(2),
         paid:            pi.status === 'succeeded',
         tracking_number: trackingNumber,

@@ -43,14 +43,22 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: `Webhook Error: ${err.message}` };
   }
 
-  const data     = stripeEvent.data.object;
-  const ref      = data.metadata?.cpars_ref || 'N/A';
-  const carrier  = data.metadata?.carrier   || 'N/A';
-  const service  = data.metadata?.service   || 'N/A';
-  const amount   = data.amount_received
+  const data         = stripeEvent.data.object;
+  const meta         = data.metadata || {};
+  const ref          = meta.cpars_ref || 'N/A';
+  const carrier      = meta.carrier   || 'N/A';
+  const service      = meta.service   || 'N/A';
+  const amount       = data.amount_received
     ? '$' + (data.amount_received / 100).toFixed(2)
     : '$' + (data.amount / 100).toFixed(2);
-  const email    = data.receipt_email || data.metadata?.customer_email || null;
+  const email        = data.receipt_email || meta.customer_email || null;
+  const clientName   = meta.name          || 'Valued Customer';
+  const clientPhone  = meta.phone         || 'N/A';
+  const originAddr   = meta.origin        || meta.origin_zip        || 'On file';
+  const destAddr     = meta.destination   || meta.destination_zip   || 'On file';
+  const weightStr    = meta.weight_declared
+    ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}`
+    : (meta.weight_buffered_lbs ? `${meta.weight_buffered_lbs} lbs` : 'On file');
 
   const EMAILJS_SERVICE  = process.env.EMAILJS_SERVICE_ID;
   const EMAILJS_OWNER    = process.env.EMAILJS_OWNER_TEMPLATE;
@@ -63,40 +71,46 @@ exports.handler = async (event) => {
       console.log(`PAYMENT SUCCEEDED | Ref: ${ref} | ${amount} | Carrier: ${carrier} | Service: ${service} | Email: ${email}`);
 
       if (email && EMAILJS_SERVICE && EMAILJS_CLIENT && EMAILJS_KEY) {
-        const trackingNumber = data.metadata?.tracking_number || null;
-        const recoveryUrl    = `https://cparstransportation.com/?track=${ref}&email=${encodeURIComponent(email)}`;
+        const trackingNumber = meta.tracking_number || null;
+        const trackUrl       = `https://cparstransportation.com/?track=${ref}&email=${encodeURIComponent(email)}`;
+        const labelUrl       = meta.label_url || null;
 
         // Send confirmation to client
         const clientResult = await sendEmail(EMAILJS_SERVICE, EMAILJS_CLIENT, EMAILJS_KEY, {
-          name:             data.metadata?.name || 'Valued Customer',
+          name:             clientName,
           email,
           reference_number: ref,
           service,
-          origin:           data.metadata?.origin      || 'On file',
-          destination:      data.metadata?.destination || 'On file',
+          origin:           originAddr,
+          destination:      destAddr,
+          weight:           weightStr,
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
           tracking_number:  trackingNumber || 'Being arranged — will be emailed within 1 hour',
-          recovery_url:     recoveryUrl,
+          tracking_url:     trackUrl,
+          label_url:        labelUrl || 'Will be emailed separately once booked',
           status:           'CONFIRMED & PAID'
         });
         console.log(`Client email | Status: ${clientResult.status} | Ref: ${ref} | To: ${email}`);
 
         // Notify owner
         await sendEmail(EMAILJS_SERVICE, EMAILJS_OWNER, EMAILJS_KEY, {
-          name:             data.metadata?.name  || 'Client',
+          name:             clientName,
           email,
-          phone:            data.metadata?.phone || 'N/A',
+          phone:            clientPhone,
           reference_number: ref,
           service,
-          origin:           data.metadata?.origin      || 'Check Stripe',
-          destination:      data.metadata?.destination || 'Check Stripe',
+          origin:           originAddr,
+          destination:      destAddr,
+          weight:           weightStr,
           message:          'Payment confirmed via webhook. Verify booking in ShipEngine.',
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount,
           tracking_number:  trackingNumber || 'Pending — book manually if not auto-booked',
+          tracking_url:     trackUrl,
+          label_url:        labelUrl || 'Not yet generated',
           status:           trackingNumber ? 'CONFIRMED & PAID — BOOKED' : 'CONFIRMED & PAID — VERIFY BOOKING'
         }).catch(e => console.warn('Owner email failed:', e));
       }
@@ -116,16 +130,18 @@ exports.handler = async (event) => {
         await sendEmail(EMAILJS_SERVICE, EMAILJS_OWNER, EMAILJS_KEY, {
           name:             'CHARGEBACK ALERT',
           email:            email || 'unknown',
-          phone:            'N/A',
+          phone:            clientPhone || 'N/A',
           reference_number: ref,
           service:          'DISPUTE',
-          origin:           'N/A',
-          destination:      'N/A',
+          origin:           originAddr,
+          destination:      destAddr,
           message:          'CHARGEBACK FILED. Reason: ' + data.reason + '. Respond in Stripe within 7 days.',
           submitted_at:     new Date().toLocaleString(),
           carrier,
           amount:           disputeAmount,
           tracking_number:  'N/A',
+          tracking_url:     'N/A',
+          label_url:        'N/A',
           status:           'CHARGEBACK'
         }).catch(() => {});
       }

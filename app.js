@@ -236,7 +236,15 @@
         EMAILJS_SERVICE    = cfg.emailjsServiceId;
         EMAILJS_CLIENT_TPL = cfg.emailjsClientTemplate;
         EMAILJS_OWNER_TPL  = cfg.emailjsOwnerTemplate;
-        stripe = Stripe(cfg.stripeKey);
+        // Load Stripe.js dynamically to avoid SSL polling errors on localhost
+        await new Promise((resolve, reject) => {
+          if (window.Stripe) { stripe = Stripe(cfg.stripeKey); return resolve(); }
+          const s = document.createElement('script');
+          s.src = 'https://js.stripe.com/v3/';
+          s.onload = () => { stripe = Stripe(cfg.stripeKey); resolve(); };
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
       } catch(e) {
         console.error('Config load failed', e);
       }
@@ -935,12 +943,12 @@
             <div class="track-details-grid">
               <div class="track-detail"><span>Reference</span><strong>${data.ref}</strong></div>
               <div class="track-detail"><span>Date</span><strong>${data.submittedAt}</strong></div>
-              <div class="track-detail"><span>Name</span><strong>${data.name}</strong></div>
+              ${data.name && data.name !== '—' ? `<div class="track-detail"><span>Name</span><strong>${data.name}</strong></div>` : ''}
               <div class="track-detail"><span>Amount Paid</span><strong>$${data.amount}</strong></div>
               <div class="track-detail"><span>Carrier</span><strong>${data.carrier}</strong></div>
               <div class="track-detail"><span>Service</span><strong>${data.service}</strong></div>
-              <div class="track-detail"><span>From</span><strong>${data.origin}</strong></div>
-              <div class="track-detail"><span>To</span><strong>${data.destination}</strong></div>
+              ${data.origin && data.origin !== '—' ? `<div class="track-detail"><span>From</span><strong>${data.origin}</strong></div>` : ''}
+              ${data.destination && data.destination !== '—' ? `<div class="track-detail"><span>To</span><strong>${data.destination}</strong></div>` : ''}
               <div class="track-detail"><span>Weight</span><strong>${data.weight}</strong></div>
               ${trackingRow}
             </div>

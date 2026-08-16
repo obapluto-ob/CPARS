@@ -135,13 +135,22 @@ function renderTable(shipments) {
 
     const actions = [
       s.receipt_url
-        ? `<a href="${s.receipt_url}" class="action-btn" target="_blank"><i class="fa-solid fa-receipt"></i> Receipt</a>`
+        ? `<a href="${s.receipt_url}" class="action-btn" target="_blank" title="View Receipt"><i class="fa-solid fa-receipt"></i></a>`
+        : '',
+      s.label_url
+        ? `<a href="${s.label_url}" class="action-btn label-btn" target="_blank" title="Download Label PDF"><i class="fa-solid fa-file-pdf"></i></a>`
         : '',
       s.paid && userRole === 'admin'
-        ? `<button class="action-btn retry admin-only" onclick="openRetryModal(${origIdx})"><i class="fa-solid fa-rotate"></i> Retry</button>`
+        ? `<button class="action-btn retry admin-only" onclick="openRetryModal(${origIdx})" title="Retry Booking"><i class="fa-solid fa-rotate"></i></button>`
         : '',
       userRole === 'admin'
-        ? `<button class="action-btn track-entry admin-only" onclick="openTrackModal('${s.stripe_id}','${s.ref}')"><i class="fa-solid fa-pen"></i> Set Tracking</button>`
+        ? `<button class="action-btn track-entry admin-only" onclick="openTrackModal('${s.stripe_id}','${s.ref}')" title="Set Tracking"><i class="fa-solid fa-pen"></i></button>`
+        : '',
+      userRole === 'admin'
+        ? `<button class="action-btn email-btn admin-only" onclick="openEmailModal(${origIdx})" title="Email Customer"><i class="fa-solid fa-envelope"></i></button>`
+        : '',
+      s.paid && userRole === 'admin'
+        ? `<button class="action-btn refund-btn admin-only" onclick="openRefundModal('${s.stripe_id}','${s.ref}',${s.amount})" title="Issue Refund"><i class="fa-solid fa-rotate-left"></i></button>`
         : ''
     ].filter(Boolean).join('');
 
@@ -167,7 +176,7 @@ function renderTable(shipments) {
         <td><span class="pay-badge ${payClass}">${payLabel}</span></td>
         <td><span class="pay-badge ${bkClass}">${bkLabel}</span></td>
         <td style="font-size:0.75rem;color:#64748b;white-space:nowrap">${s.submittedAt}</td>
-        <td>${actions}</td>
+        <td><div style="display:flex;flex-wrap:wrap;gap:4px">${actions}</div></td>
       </tr>
     `;
   }).join('');
@@ -373,4 +382,180 @@ async function submitTrackingEntry() {
 
   btn.disabled  = false;
   btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Tracking';
+}
+
+/* ══════════════════════════════
+   EMAIL CUSTOMER MODAL
+══════════════════════════════ */
+let emailTargetIndex = null;
+
+function openEmailModal(index) {
+  emailTargetIndex = index;
+  const s = allShipments[index] || {};
+  document.getElementById('em-to-email').value  = s.email  !== '—' ? s.email  : '';
+  document.getElementById('em-to-name').value   = s.name   !== '—' ? s.name   : '';
+  document.getElementById('em-ref').value       = s.ref    !== '—' ? s.ref    : '';
+  document.getElementById('em-carrier').value   = s.carrier !== '—' ? s.carrier : '';
+  document.getElementById('em-service').value   = s.service !== '—' ? s.service : '';
+  document.getElementById('em-amount').value    = s.amount ? '$' + s.amount.toFixed(2) : '';
+  document.getElementById('em-tracking').value  = s.tracking_number || '';
+  document.getElementById('em-message').value   = '';
+  document.getElementById('em-subject').value   = 'Update on Your CPARS Shipment';
+  document.getElementById('emailModalResult').style.display = 'none';
+  document.getElementById('emailModal').classList.add('open');
+}
+
+function closeEmailModal() {
+  document.getElementById('emailModal').classList.remove('open');
+  emailTargetIndex = null;
+}
+
+async function submitEmailCustomer() {
+  const btn    = document.getElementById('emailSubmitBtn');
+  const result = document.getElementById('emailModalResult');
+  const s      = allShipments[emailTargetIndex] || {};
+
+  const payload = {
+    admin_secret:    'cpars_admin_token',
+    to_email:        document.getElementById('em-to-email').value.trim(),
+    to_name:         document.getElementById('em-to-name').value.trim(),
+    ref:             document.getElementById('em-ref').value.trim(),
+    subject_note:    document.getElementById('em-subject').value.trim(),
+    message:         document.getElementById('em-message').value.trim(),
+    tracking_number: document.getElementById('em-tracking').value.trim(),
+    tracking_url:    s.ref ? `https://cparstransportation.com/?track=${s.ref}&email=${encodeURIComponent(document.getElementById('em-to-email').value.trim())}` : '',
+    label_url:       s.label_url || '',
+    carrier:         document.getElementById('em-carrier').value.trim(),
+    service:         document.getElementById('em-service').value.trim(),
+    amount:          document.getElementById('em-amount').value.trim(),
+  };
+
+  if (!payload.to_email || !payload.message) {
+    result.className = 'modal-result error';
+    result.style.display = 'block';
+    result.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Email and message are required.';
+    return;
+  }
+
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+  result.style.display = 'none';
+
+  try {
+    const res  = await fetch('/.netlify/functions/admin-send-email', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      result.className = 'modal-result success';
+      result.style.display = 'block';
+      result.innerHTML = `<i class="fa-solid fa-circle-check"></i> Email sent to <strong>${payload.to_email}</strong>`;
+      setTimeout(() => closeEmailModal(), 2500);
+    } else {
+      result.className = 'modal-result error';
+      result.style.display = 'block';
+      result.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${data.error || 'Failed to send email.'}`;
+    }
+  } catch (err) {
+    result.className = 'modal-result error';
+    result.style.display = 'block';
+    result.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Network error: ${err.message}`;
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Email';
+}
+
+/* ══════════════════════════════
+   REFUND MODAL
+══════════════════════════════ */
+function openRefundModal(stripeId, ref, amount) {
+  document.getElementById('rf-stripe-id').value  = stripeId;
+  document.getElementById('rf-ref').textContent  = ref;
+  document.getElementById('rf-amount').textContent = '$' + parseFloat(amount).toFixed(2);
+  document.getElementById('rf-partial').value    = '';
+  document.getElementById('rf-reason').value     = 'requested_by_customer';
+  document.getElementById('refundModalResult').style.display = 'none';
+  document.getElementById('refundModal').classList.add('open');
+}
+
+function closeRefundModal() {
+  document.getElementById('refundModal').classList.remove('open');
+}
+
+async function submitRefund() {
+  const btn      = document.getElementById('refundSubmitBtn');
+  const result   = document.getElementById('refundModalResult');
+  const stripeId = document.getElementById('rf-stripe-id').value;
+  const partial  = document.getElementById('rf-partial').value.trim();
+  const reason   = document.getElementById('rf-reason').value;
+
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+  result.style.display = 'none';
+
+  const payload = {
+    admin_secret: 'cpars_admin_token',
+    stripe_id:    stripeId,
+    reason
+  };
+  if (partial) payload.amount_cents = Math.round(parseFloat(partial) * 100);
+
+  try {
+    const res  = await fetch('/.netlify/functions/admin-refund', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      result.className = 'modal-result success';
+      result.style.display = 'block';
+      result.innerHTML = `<i class="fa-solid fa-circle-check"></i> Refund of <strong>$${data.amount_refunded}</strong> issued. ID: ${data.refund_id}`;
+      setTimeout(() => { closeRefundModal(); loadActivity(); }, 3000);
+    } else {
+      result.className = 'modal-result error';
+      result.style.display = 'block';
+      result.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${data.error || 'Refund failed.'}`;
+    }
+  } catch (err) {
+    result.className = 'modal-result error';
+    result.style.display = 'block';
+    result.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Network error: ${err.message}`;
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Issue Refund';
+}
+
+/* ══════════════════════════════
+   EXPORT CSV
+══════════════════════════════ */
+function exportCSV() {
+  const rows = [
+    ['Reference','Name','Email','Phone','Origin','Destination','Carrier','Service','Weight','Amount','Tracking','Payment','Booking','Date']
+  ];
+  allShipments.forEach(s => {
+    rows.push([
+      s.ref, s.name, s.email, s.phone,
+      s.origin, s.destination, s.carrier, s.service,
+      s.weight, '$' + s.amount.toFixed(2),
+      s.tracking_number || '',
+      s.paid ? 'Paid' : s.status,
+      s.booking_status,
+      s.submittedAt
+    ].map(v => `"${String(v || '').replace(/"/g, '""')}"`));
+  });
+  const csv  = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `cpars-orders-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }

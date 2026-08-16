@@ -152,7 +152,8 @@ exports.handler = async (event) => {
           metadata: {
             tracking_number: bookData.tracking_number,
             booking_status:  'booked',
-            shipment_id:     bookData.shipment_id || ''
+            shipment_id:     bookData.shipment_id || '',
+            label_url:       bookData.label_download?.href || ''
           }
         });
       }

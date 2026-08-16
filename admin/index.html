@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CPARS Admin Portal</title>
   <meta name="robots" content="noindex, nofollow"/>
-  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg"/>
+  <link rel="icon" type="image/png" href="/assets/cpars.png"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="admin.css"/>
@@ -16,7 +16,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">
-      <img src="/assets/logo.svg" alt="CPARS" style="height:48px;width:auto;margin-bottom:8px;"/>
+      <img src="/assets/cpars.png" alt="CPARS" style="height:48px;width:auto;margin-bottom:8px;"/>
       <h1>Admin Portal</h1>
       <p>Restricted access — authorized personnel only</p>
     </div>
@@ -115,9 +115,12 @@
     <!-- Activity Log -->
     <div class="section-title">
       <span><i class="fa-solid fa-list"></i> Live Activity — Stripe Orders</span>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="action-btn retry admin-only" onclick="openRetryModal(null)">
           <i class="fa-solid fa-rotate"></i> Manual Retry
+        </button>
+        <button class="action-btn admin-only" onclick="exportCSV()" title="Export all orders to CSV">
+          <i class="fa-solid fa-file-csv"></i> Export CSV
         </button>
         <button class="action-btn" onclick="loadActivity()">
           <i class="fa-solid fa-rotate"></i> Refresh
@@ -258,6 +261,97 @@
         <i class="fa-solid fa-floppy-disk"></i> Save Tracking
       </button>
       <button class="btn-cancel" onclick="closeTrackModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Email Customer Modal -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal-box">
+    <h3><i class="fa-solid fa-envelope" style="color:#0ea5e9"></i> Email Customer</h3>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>To Email</label>
+        <input type="email" id="em-to-email" placeholder="customer@email.com"/>
+      </div>
+      <div class="modal-field">
+        <label>To Name</label>
+        <input type="text" id="em-to-name" placeholder="Customer Name"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Reference</label>
+        <input type="text" id="em-ref" placeholder="CPARS-XXXXXXXX"/>
+      </div>
+      <div class="modal-field">
+        <label>Subject / Status Note</label>
+        <input type="text" id="em-subject" placeholder="Update on Your CPARS Shipment"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Carrier</label>
+        <input type="text" id="em-carrier" placeholder="UPS"/>
+      </div>
+      <div class="modal-field">
+        <label>Service</label>
+        <input type="text" id="em-service" placeholder="UPS Ground"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Amount</label>
+        <input type="text" id="em-amount" placeholder="$0.00"/>
+      </div>
+      <div class="modal-field">
+        <label>Tracking Number</label>
+        <input type="text" id="em-tracking" placeholder="1Z999AA10123456784"/>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Message to Customer</label>
+      <textarea id="em-message" rows="4" placeholder="Your shipment has been booked and is on its way..." style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:10px;color:#f1f5f9;font-size:0.9rem;resize:vertical;"></textarea>
+    </div>
+    <div class="modal-result" id="emailModalResult"></div>
+    <div class="modal-btns">
+      <button class="btn-purple" id="emailSubmitBtn" onclick="submitEmailCustomer()" style="background:#0ea5e9;">
+        <i class="fa-solid fa-paper-plane"></i> Send Email
+      </button>
+      <button class="btn-cancel" onclick="closeEmailModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Refund Modal -->
+<div class="modal-overlay" id="refundModal">
+  <div class="modal-box" style="max-width:420px;">
+    <h3><i class="fa-solid fa-rotate-left" style="color:#ef4444"></i> Issue Refund</h3>
+    <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:4px;">
+      Order: <strong id="rf-ref" style="color:#f1f5f9"></strong>
+    </p>
+    <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:16px;">
+      Total paid: <strong id="rf-amount" style="color:#10b981"></strong>
+    </p>
+    <input type="hidden" id="rf-stripe-id"/>
+    <div class="modal-field">
+      <label>Partial Refund Amount <span style="color:#64748b;font-weight:400">(leave blank for full refund)</span></label>
+      <input type="number" id="rf-partial" placeholder="e.g. 5.00" min="0.01" step="0.01"/>
+    </div>
+    <div class="modal-field">
+      <label>Reason</label>
+      <select id="rf-reason" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:10px;color:#f1f5f9;font-size:0.9rem;">
+        <option value="requested_by_customer">Requested by Customer</option>
+        <option value="duplicate">Duplicate Charge</option>
+        <option value="fraudulent">Fraudulent</option>
+      </select>
+    </div>
+    <div class="modal-result" id="refundModalResult"></div>
+    <div class="modal-btns">
+      <button class="btn-purple" id="refundSubmitBtn" onclick="submitRefund()" style="background:#ef4444;">
+        <i class="fa-solid fa-rotate-left"></i> Issue Refund
+      </button>
+      <button class="btn-cancel" onclick="closeRefundModal()">Cancel</button>
     </div>
   </div>
 </div>
