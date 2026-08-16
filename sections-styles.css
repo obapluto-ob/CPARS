@@ -1225,3 +1225,90 @@
   .counter-num  { font-size: 2rem; }
   .industries-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ══════════════════════════════
+   ADDRESS SECTIONS
+══════════════════════════════ */
+.addr-section {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 18px 14px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.addr-section-label {
+  font-size: 0.78rem; font-weight: 700;
+  color: #374151; text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 2px;
+}
+.addr-readonly {
+  background: #f1f5f9 !important;
+  color: #374151 !important;
+  cursor: default;
+}
+
+/* ══════════════════════════════
+   INPUT ICON WRAP + STATUS
+══════════════════════════════ */
+.input-icon-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.input-icon {
+  position: absolute; left: 12px;
+  font-size: 0.85rem; color: #94a3b8;
+  pointer-events: none; z-index: 1;
+}
+.input-icon-wrap input {
+  padding-left: 34px !important;
+  padding-right: 32px !important;
+}
+.field-status {
+  position: absolute; right: 10px;
+  font-size: 0.9rem; pointer-events: none;
+}
+
+/* Google Places dropdown override */
+.pac-container {
+  border-radius: 10px !important;
+  border: 1.5px solid #bfdbfe !important;
+  box-shadow: 0 8px 24px rgba(26,86,219,0.12) !important;
+  font-family: 'Inter', sans-serif !important;
+  margin-top: 4px !important;
+}
+.pac-item {
+  padding: 10px 14px !important;
+  font-size: 0.88rem !important;
+  cursor: pointer !important;
+}
+.pac-item:hover { background: #eff6ff !important; }
+.pac-item-selected { background: #eff6ff !important; }
+.pac-icon { display: none !important; }
+
+/* ══════════════════════════════
+   QUOTE CARD TRUCK IMAGE
+══════════════════════════════ */
+.quote-truck-wrap {
+  grid-column: 1 / 4; grid-row: 0;
+  width: 100%; height: 90px;
+  border-radius: 10px; overflow: hidden;
+  margin-bottom: 4px;
+}
+.quote-truck-img {
+  width: 100%; height: 100%;
+}
+.quote-truck-img img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.quote-card:hover .quote-truck-img img {
+  transform: scale(1.04);
+}
+
+@media (max-width: 480px) {
+  .quote-truck-wrap { height: 70px; }
+  .addr-section { padding: 14px 12px; }
+}

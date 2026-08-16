@@ -7,5 +7,6 @@ exports.handler = async () => ({
     emailjsServiceId:      process.env.EMAILJS_SERVICE_ID,
     emailjsClientTemplate: process.env.EMAILJS_CLIENT_TEMPLATE,
     emailjsOwnerTemplate:  process.env.EMAILJS_OWNER_TEMPLATE,
+    googlePlacesKey:       process.env.GOOGLE_PLACES_KEY || '',
   })
 });

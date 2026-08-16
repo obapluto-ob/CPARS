@@ -120,6 +120,25 @@ exports.handler = async (event) => {
     case 'payment_intent.payment_failed': {
       const reason = data.last_payment_error?.message || 'Unknown reason';
       console.log(`PAYMENT FAILED | Ref: ${ref} | Reason: ${reason}`);
+      if (email && EMAILJS_SERVICE && EMAILJS_CLIENT && EMAILJS_KEY) {
+        await sendEmail(EMAILJS_SERVICE, EMAILJS_CLIENT, EMAILJS_KEY, {
+          name:             clientName,
+          email,
+          reference_number: ref,
+          service:          service,
+          origin:           originAddr,
+          destination:      destAddr,
+          weight:           weightStr,
+          submitted_at:     new Date().toLocaleString(),
+          carrier:          carrier,
+          amount:           amount,
+          tracking_number:  'N/A',
+          tracking_url:     `https://cparstransportation.com/#contact`,
+          label_url:        'N/A',
+          message:          `Your payment could not be processed. Reason: ${reason}. Please try again or contact us at +1 (352) 213-8976.`,
+          status:           'PAYMENT FAILED — PLEASE RETRY'
+        }).catch(() => {});
+      }
       break;
     }
 

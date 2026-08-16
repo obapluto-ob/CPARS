@@ -200,14 +200,22 @@
             </div>
             <div class="input-group">
               <label>Email Address <span class="req">*</span></label>
-              <input type="email" id="f-email" placeholder="you@email.com"/>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-envelope input-icon"></i>
+                <input type="email" id="f-email" placeholder="you@email.com" oninput="validateEmail(this)"/>
+                <span class="field-status" id="email-status"></span>
+              </div>
             </div>
           </div>
 
           <div class="form-row">
             <div class="input-group">
               <label>Phone Number <span class="req">*</span></label>
-              <input type="tel" id="f-phone" placeholder="+1 (000) 000-0000"/>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-phone input-icon"></i>
+                <input type="tel" id="f-phone" placeholder="+1 (000) 000-0000" oninput="formatPhone(this)" maxlength="14"/>
+                <span class="field-status" id="phone-status"></span>
+              </div>
             </div>
             <div class="input-group">
               <label>Service Type <span class="req">*</span></label>
@@ -224,47 +232,59 @@
             </div>
           </div>
 
-          <div class="form-row">
+          <!-- PICKUP ADDRESS -->
+          <div class="addr-section">
+            <div class="addr-section-label"><i class="fa-solid fa-location-dot" style="color:#1a56db"></i> Pickup Address</div>
             <div class="input-group">
-              <label>Pickup Street Address <span class="req">*</span></label>
-              <input type="text" id="f-origin-street" placeholder="e.g. 555 Butterfield Rd"/>
+              <label>Street Address <span class="req">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-magnifying-glass input-icon" style="color:#94a3b8"></i>
+                <input type="text" id="f-origin-street" placeholder="Start typing your pickup address..." autocomplete="off"/>
+                <span class="field-status" id="origin-status"></span>
+              </div>
+              <p class="addr-hint" id="origin-hint" style="display:none"></p>
             </div>
-            <div class="input-group">
-              <label>Pickup Apt / Suite / Unit</label>
-              <input type="text" id="f-origin-apt" placeholder="e.g. Suite 200"/>
+            <div class="form-row">
+              <div class="input-group">
+                <label>Apt / Suite / Unit</label>
+                <input type="text" id="f-origin-apt" placeholder="e.g. Suite 200"/>
+              </div>
+              <div class="input-group">
+                <label>City, State <span class="req">*</span></label>
+                <input type="text" id="f-origin-city" placeholder="Houston, TX" readonly class="addr-readonly"/>
+              </div>
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="input-group">
-              <label>Pickup City, State <span class="req">*</span></label>
-              <input type="text" id="f-origin-city" placeholder="e.g. Houston, TX"/>
-            </div>
-            <div class="input-group">
-              <label>Pickup ZIP Code <span class="req">*</span></label>
-              <input type="text" id="f-origin" placeholder="e.g. 77090"/>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="input-group">
-              <label>Destination Street Address <span class="req">*</span></label>
-              <input type="text" id="f-dest-street" placeholder="e.g. 123 Main St"/>
-            </div>
-            <div class="input-group">
-              <label>Destination Apt / Suite / Unit</label>
-              <input type="text" id="f-dest-apt" placeholder="e.g. Unit 5B"/>
+            <div class="input-group" style="max-width:180px">
+              <label>ZIP Code <span class="req">*</span></label>
+              <input type="text" id="f-origin" placeholder="77090" readonly class="addr-readonly"/>
             </div>
           </div>
 
-          <div class="form-row">
+          <!-- DESTINATION ADDRESS -->
+          <div class="addr-section">
+            <div class="addr-section-label"><i class="fa-solid fa-flag-checkered" style="color:#10b981"></i> Destination Address</div>
             <div class="input-group">
-              <label>Destination City, State <span class="req">*</span></label>
-              <input type="text" id="f-dest-city" placeholder="e.g. Dallas, TX"/>
+              <label>Street Address <span class="req">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-magnifying-glass input-icon" style="color:#94a3b8"></i>
+                <input type="text" id="f-dest-street" placeholder="Start typing destination address..." autocomplete="off"/>
+                <span class="field-status" id="dest-status"></span>
+              </div>
+              <p class="addr-hint" id="dest-hint" style="display:none"></p>
             </div>
-            <div class="input-group">
-              <label>Destination ZIP Code <span class="req">*</span></label>
-              <input type="text" id="f-destination" placeholder="e.g. 75201"/>
+            <div class="form-row">
+              <div class="input-group">
+                <label>Apt / Suite / Unit</label>
+                <input type="text" id="f-dest-apt" placeholder="e.g. Unit 5B"/>
+              </div>
+              <div class="input-group">
+                <label>City, State <span class="req">*</span></label>
+                <input type="text" id="f-dest-city" placeholder="Dallas, TX" readonly class="addr-readonly"/>
+              </div>
+            </div>
+            <div class="input-group" style="max-width:180px">
+              <label>ZIP Code <span class="req">*</span></label>
+              <input type="text" id="f-destination" placeholder="75201" readonly class="addr-readonly"/>
             </div>
           </div>
 

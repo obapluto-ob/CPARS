@@ -264,7 +264,7 @@
         EMAILJS_SERVICE    = cfg.emailjsServiceId;
         EMAILJS_CLIENT_TPL = cfg.emailjsClientTemplate;
         EMAILJS_OWNER_TPL  = cfg.emailjsOwnerTemplate;
-        // Load Stripe.js dynamically to avoid SSL polling errors on localhost
+        // Load Stripe.js dynamically
         await new Promise((resolve, reject) => {
           if (window.Stripe) { stripe = Stripe(cfg.stripeKey); return resolve(); }
           const s = document.createElement('script');
@@ -273,11 +273,98 @@
           s.onerror = reject;
           document.head.appendChild(s);
         });
+        // Load Google Places dynamically if key provided
+        if (cfg.googlePlacesKey) {
+          const gScript = document.createElement('script');
+          gScript.src = `https://maps.googleapis.com/maps/api/js?key=${cfg.googlePlacesKey}&libraries=places`;
+          gScript.onload = initGooglePlaces;
+          document.head.appendChild(gScript);
+        }
       } catch(e) {
         console.error('Config load failed', e);
       }
     }
     initServices();
+
+    /* ══════════════════════════════
+       GOOGLE PLACES AUTOCOMPLETE
+    ══════════════════════════════ */
+    function initGooglePlaces() {
+      setupPlaces('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status');
+      setupPlaces('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status');
+    }
+
+    function setupPlaces(streetId, cityId, zipId, statusId) {
+      const input = document.getElementById(streetId);
+      if (!input || !window.google) return;
+      const ac = new google.maps.places.Autocomplete(input, {
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'formatted_address'],
+        types: ['address']
+      });
+      ac.addListener('place_changed', () => {
+        const place = ac.getPlace();
+        if (!place.address_components) return;
+        let street = '', city = '', state = '', zip = '';
+        place.address_components.forEach(c => {
+          if (c.types.includes('street_number'))               street = c.long_name + ' ';
+          if (c.types.includes('route'))                       street += c.long_name;
+          if (c.types.includes('locality'))                    city   = c.long_name;
+          if (c.types.includes('administrative_area_level_1')) state  = c.short_name;
+          if (c.types.includes('postal_code'))                 zip    = c.long_name;
+        });
+        input.value = street;
+        document.getElementById(cityId).value = city + (state ? ', ' + state : '');
+        document.getElementById(zipId).value  = zip;
+        const statusEl = document.getElementById(statusId);
+        if (statusEl) { statusEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'; }
+        // Check same address after both filled
+        checkSameAddress();
+      });
+    }
+
+    function checkSameAddress() {
+      const oZip = document.getElementById('f-origin').value.trim();
+      const dZip = document.getElementById('f-destination').value.trim();
+      const note = document.getElementById('formNote');
+      if (oZip && dZip && oZip === dZip) {
+        note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Pickup and destination ZIP codes are the same — please check your addresses.';
+        note.style.color = '#dc2626';
+        document.getElementById('dest-status').innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color:#dc2626"></i>';
+      } else if (note.textContent.includes('same')) {
+        note.textContent = '';
+        const ds = document.getElementById('dest-status');
+        if (ds && dZip) ds.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>';
+      }
+    }
+
+    /* ══════════════════════════════
+       PHONE FORMATTER
+    ══════════════════════════════ */
+    window.formatPhone = (input) => {
+      let v = input.value.replace(/\D/g, '').slice(0, 10);
+      if (v.length >= 6)      v = '(' + v.slice(0,3) + ') ' + v.slice(3,6) + '-' + v.slice(6);
+      else if (v.length >= 3) v = '(' + v.slice(0,3) + ') ' + v.slice(3);
+      input.value = v;
+      const st = document.getElementById('phone-status');
+      if (st) st.innerHTML = v.replace(/\D/g,'').length === 10
+        ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
+        : '';
+    };
+
+    /* ══════════════════════════════
+       EMAIL VALIDATOR
+    ══════════════════════════════ */
+    window.validateEmail = (input) => {
+      const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value);
+      const st = document.getElementById('email-status');
+      if (!st) return;
+      st.innerHTML = input.value
+        ? valid
+          ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
+          : '<i class="fa-solid fa-circle-xmark" style="color:#dc2626"></i>'
+        : '';
+    };
 
     // Payment recovery — handle ?recover=REF&email=EMAIL&amount=AMOUNT in URL
     (function checkRecovery() {
@@ -479,12 +566,26 @@
       showQuotes(rates);
     }
 
-    /* Carrier logo map — real brand logos via Wikipedia SVG CDN */
+    /* Carrier logo map — real brand logos */
     const CARRIER_LOGOS = {
       ups:            { src: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/UPS_Logo_Shield_2017.svg',           bg: '#301506' },
       fedex_walleted: { src: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg', bg: '#4d148c' },
-      stamps_com:     { src: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/usps.svg', bg: '#004b87' },
-      globalpost:     { src: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/usps.svg', bg: '#004b87' },
+      stamps_com:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
+      usps:           { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
+      globalpost:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
+      dhl_express:    { src: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/DHL_Logo.svg',                      bg: '#FFCC00', textColor: '#D40511' },
+      ontrac:         { src: '', bg: '#e65c00' },
+    };
+
+    /* Service → truck image map */
+    const SERVICE_TRUCK = {
+      'Full Truckload (FTL)':       'fleet-truck-1.jpg',
+      'Less Than Truckload (LTL)':  'fleet-truck-2.jpg',
+      'Hotshot & Expedited':        'fleet-truck-3.jpg',
+      'Dry Van Transport':          'fleet-truck-1.jpg',
+      'Hazmat Transport':           'hazmat-truck.jpg',
+      'Local & Regional Hauling':   'fleet-truck-2.jpg',
+      'Freight Coordination':       'fleet-truck-3.jpg',
     };
 
     function setStep(n) {
@@ -527,14 +628,17 @@
           : null;
 
         const logo    = CARRIER_LOGOS[r.carrier_code];
-        const logoHtml = logo
+        const truckImg = SERVICE_TRUCK[currentFormData?.service] || 'fleet-truck-1.jpg';
+        const logoHtml = logo && logo.src
           ? `<div class="quote-logo-box" style="background:${logo.bg}">
                <img src="${logo.src}" alt="${r.carrier}"
                  onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-truck\' style=\'font-size:1.4rem;color:#fff\'></i>'"/>
              </div>`
-          : `<div class="quote-logo-box" style="background:#1a56db">
+          : `<div class="quote-logo-box" style="background:${logo?.bg || '#1a56db'}">
                <i class="fa-solid fa-truck" style="font-size:1.4rem;color:#fff"></i>
              </div>`;
+
+        const truckHtml = `<div class="quote-truck-img"><img src="${truckImg}" alt="truck" onerror="this.style.display='none'"/></div>`;
 
         const deliveryLabel = r.delivery_label || (r.delivery_days ? `${r.delivery_days} business day(s)` : 'Contact for ETA');
         const deliveryDateHtml = deliveryDate ? `<span class="qtag qtag-date"><i class="fa-solid fa-calendar-check"></i> Est. ${deliveryDate}</span>` : '';
@@ -550,6 +654,7 @@
         return `
           <div class="quote-card ${isBest ? 'quote-best' : ''}" onclick="selectQuote(${i})" id="quote-${i}">
             ${badge}
+            <div class="quote-truck-wrap">${truckHtml}</div>
             <div class="quote-logo-box">${logoHtml}</div>
             <div class="quote-carrier-info">
               <strong>${r.carrier}</strong>
