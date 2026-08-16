@@ -1,5 +1,6 @@
 const { isRateLimited, rateLimitResponse } = require('./utils/rateLimit');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { getCarrierIds } = require('./utils/getCarrierIds');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -48,7 +49,7 @@ exports.handler = async (event) => {
       method: 'POST',
       headers: { 'API-Key': API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        carrier_ids:         [],
+        carrier_ids:         await getCarrierIds(API_KEY),
         from_country_code:   'US',
         from_postal_code:    origin_zip,
         from_city_locality:  origin_city   || 'Houston',

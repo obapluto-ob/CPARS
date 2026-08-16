@@ -1,4 +1,5 @@
 const { isRateLimited, rateLimitResponse } = require('./utils/rateLimit');
+const { getCarrierIds } = require('./utils/getCarrierIds');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +55,7 @@ exports.handler = async (event) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        carrier_ids:       [], // empty = all connected carriers
+        carrier_ids:       await getCarrierIds(API_KEY),
         from_country_code: 'US',
         from_postal_code:  origin_zip,
         from_city_locality: origin_city   || 'Houston',
