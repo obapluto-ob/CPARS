@@ -21,7 +21,7 @@ exports.handler = async (event) => {
     // Fetch last 100 paid intents
     const intents = await stripe.paymentIntents.list({ limit: 100 });
 
-    // Filter: succeeded + no tracking number + not refunded + has a real rate_id (not estimated)
+    // Filter: succeeded + no tracking number + not refunded + not estimated-only
     const unbooked = intents.data.filter(pi => {
       const meta = pi.metadata || {};
       return (
@@ -29,8 +29,9 @@ exports.handler = async (event) => {
         !meta.tracking_number &&
         meta.booking_status !== 'booked' &&
         meta.booking_status !== 'refunded' &&
-        meta.rate_id &&
-        !meta.rate_id.startsWith('est-') // skip estimated fallback rates
+        meta.rate_id !== 'est-standard' &&
+        meta.rate_id !== 'est-express' &&
+        meta.rate_id !== 'est-economy'
       );
     });
 
@@ -44,6 +45,24 @@ exports.handler = async (event) => {
       const meta = pi.metadata || {};
       const ref  = meta.cpars_ref || pi.id;
 
+      // Can't book without a destination ZIP
+      // Try to extract from full address string if zip field is empty
+      let destZip = meta.destination_zip || '';
+      let originZip = meta.origin_zip || '77090';
+      if (!destZip && meta.destination) {
+        const m = meta.destination.match(/(\d{5})/);
+        if (m) destZip = m[1];
+      }
+      if (!originZip && meta.origin) {
+        const m = meta.origin.match(/(\d{5})/);
+        if (m) originZip = m[1];
+      }
+
+      if (!destZip) {
+        results.push({ ref, status: 'skipped', reason: 'Missing destination ZIP — use Manual Retry to fill in address details' });
+        continue;
+      }
+
       try {
         // Step 1 — get fresh rates for this route
         const ratesRes = await fetch('https://api.shipengine.com/v1/rates/estimate', {
@@ -52,11 +71,11 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             carrier_ids:         [],
             from_country_code:   'US',
-            from_postal_code:    meta.origin_zip      || '77090',
+            from_postal_code:    originZip,
             from_city_locality:  '',
             from_state_province: 'TX',
             to_country_code:     'US',
-            to_postal_code:      meta.destination_zip || '',
+            to_postal_code:      destZip,
             to_city_locality:    '',
             to_state_province:   '',
             weight:     { value: parseFloat(meta.weight_buffered_lbs || meta.weight_declared || 1), unit: 'pound' },
@@ -95,7 +114,7 @@ exports.handler = async (event) => {
               name:          meta.name        || 'Client',
               phone:         meta.phone       || '',
               address_line1: '123 Main St',
-              postal_code:   meta.destination_zip || '',
+              postal_code:   destZip,
               country_code:  'US',
               address_residential_indicator: 'unknown'
             },
@@ -105,7 +124,7 @@ exports.handler = async (event) => {
               address_line1: '555 Butterfield Rd',
               city_locality: 'Houston',
               state_province:'TX',
-              postal_code:   meta.origin_zip || '77090',
+              postal_code:   originZip,
               country_code:  'US',
               address_residential_indicator: 'no'
             }

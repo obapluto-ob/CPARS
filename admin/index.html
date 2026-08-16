@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CPARS Admin Portal</title>
   <meta name="robots" content="noindex, nofollow"/>
-  <link rel="icon" type="image/png" href="/assets/cpars.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/cpars.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/cpars.png"/>
+  <link rel="apple-touch-icon" href="/assets/cpars.png"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="admin.css"/>
@@ -26,8 +28,16 @@
     </div>
     <div class="login-field">
       <label>Password / Passcode</label>
-      <input type="password" id="adminPass" placeholder="Enter password or passcode" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div class="pass-wrap">
+        <input type="password" id="adminPass" placeholder="Enter password or passcode" onkeydown="if(event.key==='Enter')doLogin()"/>
+        <button type="button" class="pass-toggle" onclick="togglePassVis()" tabindex="-1">
+          <i class="fa-solid fa-eye" id="passToggleIcon"></i>
+        </button>
+      </div>
     </div>
+    <label class="remember-row">
+      <input type="checkbox" id="rememberMe"/> Remember me on this device
+    </label>
     <button class="login-btn" onclick="doLogin()">
       <i class="fa-solid fa-lock-open"></i> Access Dashboard
     </button>

@@ -3,8 +3,20 @@ const ADMIN_PASS   = 'CPARS@2025!secure';
 const BETH_CODE    = '2012';
 const SESSION_KEY  = 'cpars_admin_session';
 const SESSION_ROLE = 'cpars_admin_role';
+const REMEMBER_KEY = 'cpars_admin_remember';
 
 let userRole = 'readonly';
+
+/* ══════════════════════════════
+   PASSWORD TOGGLE
+══════════════════════════════ */
+function togglePassVis() {
+  const inp  = document.getElementById('adminPass');
+  const icon = document.getElementById('passToggleIcon');
+  const show = inp.type === 'password';
+  inp.type   = show ? 'text' : 'password';
+  icon.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+}
 
 /* ══════════════════════════════
    LOGIN / LOGOUT
@@ -12,25 +24,29 @@ let userRole = 'readonly';
 function doLogin() {
   const u = (document.getElementById('adminUser').value || '').trim();
   const p = (document.getElementById('adminPass').value || '').trim();
+  const remember = document.getElementById('rememberMe').checked;
 
-  if (u === ADMIN_USER && p === ADMIN_PASS) {
-    userRole = 'admin';
-    sessionStorage.setItem(SESSION_KEY,  'true');
-    sessionStorage.setItem(SESSION_ROLE, 'admin');
-    showDashboard();
+  let role = null;
+  if (u === ADMIN_USER && p === ADMIN_PASS) role = 'admin';
+  else if (p === BETH_CODE || u === BETH_CODE) role = 'readonly';
+
+  if (!role) {
+    document.getElementById('loginError').textContent = 'Invalid credentials. Try again.';
+    document.getElementById('adminPass').value = '';
     return;
   }
 
-  if (p === BETH_CODE || u === BETH_CODE) {
-    userRole = 'readonly';
-    sessionStorage.setItem(SESSION_KEY,  'true');
-    sessionStorage.setItem(SESSION_ROLE, 'readonly');
-    showDashboard();
-    return;
+  userRole = role;
+  sessionStorage.setItem(SESSION_KEY,  'true');
+  sessionStorage.setItem(SESSION_ROLE, role);
+
+  if (remember) {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ u, p, role }));
+  } else {
+    localStorage.removeItem(REMEMBER_KEY);
   }
 
-  document.getElementById('loginError').textContent = 'Invalid credentials. Try again.';
-  document.getElementById('adminPass').value = '';
+  showDashboard();
 }
 
 function showDashboard() {
@@ -56,11 +72,28 @@ function doLogout() {
   location.reload();
 }
 
-// Auto-login if session active
+// Auto-login if session active or remembered
 (function autoLogin() {
-  if (!sessionStorage.getItem(SESSION_KEY)) return;
-  userRole = sessionStorage.getItem(SESSION_ROLE) || 'readonly';
-  showDashboard();
+  // Session still active (tab not closed)
+  if (sessionStorage.getItem(SESSION_KEY)) {
+    userRole = sessionStorage.getItem(SESSION_ROLE) || 'readonly';
+    showDashboard();
+    return;
+  }
+  // Remembered on this device
+  try {
+    const saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null');
+    if (saved && saved.role) {
+      userRole = saved.role;
+      sessionStorage.setItem(SESSION_KEY,  'true');
+      sessionStorage.setItem(SESSION_ROLE, saved.role);
+      // Pre-fill fields so user sees what was saved
+      document.getElementById('adminUser').value  = saved.u || '';
+      document.getElementById('adminPass').value  = saved.p || '';
+      document.getElementById('rememberMe').checked = true;
+      showDashboard();
+    }
+  } catch(e) { localStorage.removeItem(REMEMBER_KEY); }
 })();
 
 /* ══════════════════════════════

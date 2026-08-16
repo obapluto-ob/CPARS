@@ -316,3 +316,28 @@ tr:hover td { background: #263348; }
 @media (max-width: 480px) {
   .order-drawer { width: 100vw; }
 }
+
+/* ── PASSWORD TOGGLE ── */
+.pass-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.pass-wrap input {
+  width: 100%; padding-right: 42px;
+}
+.pass-toggle {
+  position: absolute; right: 10px;
+  background: none; border: none; color: #64748b;
+  cursor: pointer; font-size: 0.95rem; padding: 4px;
+  transition: color 0.2s;
+}
+.pass-toggle:hover { color: #f1f5f9; }
+
+/* ── REMEMBER ME ── */
+.remember-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.82rem; color: #94a3b8; cursor: pointer;
+  margin-bottom: 4px; user-select: none;
+}
+.remember-row input[type="checkbox"] {
+  width: 15px; height: 15px; accent-color: #3b82f6; cursor: pointer;
+}
