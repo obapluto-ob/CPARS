@@ -25,6 +25,8 @@
       initContact();
       initCounters();
       checkReturningUser();
+      setupFreeAutocomplete('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status', 'origin-hint');
+      setupFreeAutocomplete('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status', 'dest-hint');
     });
 
     /* ══════════════════════════════
@@ -289,13 +291,7 @@
       setupFreeAutocomplete('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status', 'origin-hint');
       setupFreeAutocomplete('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status', 'dest-hint');
     }
-    // Also init immediately (no key needed)
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        setupFreeAutocomplete('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status', 'origin-hint');
-        setupFreeAutocomplete('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status', 'dest-hint');
-      }, 800);
-    });
+    // initAddressAutocomplete is called after sections finish loading (see Promise.all below)
 
     const _acTimers = {};
     const _acDropdowns = {};
