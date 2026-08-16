@@ -304,6 +304,8 @@ function openRetryModal(index) {
 
   if (index !== null && allShipments[index]) {
     const s = allShipments[index];
+    // Store stripe_id for patch
+    document.getElementById('retryModal').dataset.stripeId = s.stripe_id || '';
     document.getElementById('r-ref').value          = s.ref          !== '—' ? s.ref          : '';
     document.getElementById('r-name').value         = s.name         !== '—' ? s.name         : '';
     document.getElementById('r-email').value        = s.email        !== '—' ? s.email        : '';
@@ -337,6 +339,70 @@ function openRetryModal(index) {
 function closeRetryModal() {
   document.getElementById('retryModal').classList.remove('open');
   retryTargetIndex = null;
+}
+
+/* Patch missing metadata on an existing Stripe PaymentIntent */
+async function submitPatchMetadata() {
+  const btn      = document.getElementById('retryPatchBtn');
+  const result   = document.getElementById('retryResult');
+  const stripeId = document.getElementById('retryModal').dataset.stripeId;
+
+  if (!stripeId) {
+    result.className = 'modal-result error';
+    result.style.display = 'block';
+    result.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> No Stripe ID found — open this modal from a table row, not Manual Retry.';
+    return;
+  }
+
+  const originStreet = document.getElementById('r-origin-street').value.trim();
+  const originCity   = document.getElementById('r-origin-city').value.trim();
+  const originZip    = document.getElementById('r-origin-zip').value.trim();
+  const destStreet   = document.getElementById('r-dest-street').value.trim();
+  const destCity     = document.getElementById('r-dest-city').value.trim();
+  const destZip      = document.getElementById('r-dest-zip').value.trim();
+
+  const payload = {
+    admin_secret:    'cpars_admin_token',
+    stripe_id:       stripeId,
+    name:            document.getElementById('r-name').value.trim(),
+    phone:           document.getElementById('r-phone').value.trim(),
+    origin:          [originStreet, originCity, originZip].filter(Boolean).join(', '),
+    destination:     [destStreet, destCity, destZip].filter(Boolean).join(', '),
+    origin_zip:      originZip,
+    destination_zip: destZip,
+    weight_declared: document.getElementById('r-weight').value.trim(),
+    weight_unit:     document.getElementById('r-weight-unit').value,
+  };
+
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  result.style.display = 'none';
+
+  try {
+    const res  = await fetch('/.netlify/functions/admin-patch-metadata', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      result.className = 'modal-result success';
+      result.style.display = 'block';
+      result.innerHTML = '<i class="fa-solid fa-circle-check"></i> Details saved to Stripe. Table will refresh.';
+      setTimeout(() => { loadActivity(); }, 1800);
+    } else {
+      result.className = 'modal-result error';
+      result.style.display = 'block';
+      result.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + (data.error || 'Save failed.');
+    }
+  } catch (err) {
+    result.className = 'modal-result error';
+    result.style.display = 'block';
+    result.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + err.message;
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Details to Stripe';
 }
 
 async function submitRetry() {

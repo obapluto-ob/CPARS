@@ -28,38 +28,58 @@ exports.handler = async (event) => {
     const shipments = intents.data.map(pi => {
       const meta    = pi.metadata || {};
       const charge  = pi.latest_charge;
+      const billing = charge?.billing_details || {};
       const receipt = charge?.receipt_url || null;
 
+      // Fallback chain: metadata → charge billing_details → receipt_email
+      const name  = (meta.name  && meta.name  !== '' && meta.name  !== '—') ? meta.name  : (billing.name  || '—');
+      const email = (meta.customer_email && meta.customer_email !== '' && meta.customer_email !== '—') ? meta.customer_email : (billing.email || pi.receipt_email || '—');
+      const phone = (meta.phone && meta.phone !== '' && meta.phone !== '—') ? meta.phone : (billing.phone || '—');
+
+      // Address fallback: metadata full string → billing address
+      const billingAddr = billing.address
+        ? [billing.address.line1, billing.address.line2, billing.address.city, billing.address.state, billing.address.postal_code].filter(Boolean).join(', ')
+        : '';
+      const origin      = (meta.origin      && meta.origin      !== '' && meta.origin      !== '—') ? meta.origin      : (billingAddr || '—');
+      const destination = (meta.destination && meta.destination !== '' && meta.destination !== '—') ? meta.destination : '—';
+
+      // ZIP fallback from address string
+      const extractZip = (str) => { const m = (str||'').match(/(\d{5})/); return m ? m[1] : '—'; };
+      const origin_zip      = (meta.origin_zip      && meta.origin_zip      !== '' && meta.origin_zip      !== '—') ? meta.origin_zip      : extractZip(origin);
+      const destination_zip = (meta.destination_zip && meta.destination_zip !== '' && meta.destination_zip !== '—') ? meta.destination_zip : extractZip(destination);
+
+      // Weight: prefer declared, fall back to description parse
+      const weight = meta.weight_declared
+        ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}`
+        : (meta.weight || '—');
+
       return {
-        ref:         meta.cpars_ref      || '—',
-        name:        meta.name           || '—',
-        email:       meta.customer_email || charge?.billing_details?.email || pi.receipt_email || '—',
-        phone:       meta.phone          || '—',
-        origin:      meta.origin         || '—',
-        destination: meta.destination    || '—',
-        carrier:     meta.carrier        || '—',
-        carrier_code: meta.carrier_code   || '',
-        service:     meta.service        || '—',
+        ref:         meta.cpars_ref || '—',
+        name, email, phone, origin, destination,
+        carrier:     meta.carrier      || '—',
+        carrier_code: meta.carrier_code || '',
+        service:     meta.service      || '—',
+        service_code: meta.service_code || '',
         amount:      pi.amount / 100,
         status:      pi.status,
         paid:        pi.status === 'succeeded',
-        booking_status: meta.booking_status || 'pending',
+        booking_status:  meta.booking_status  || 'pending',
         tracking_number: meta.tracking_number || null,
         submittedAt: (() => {
           const d = new Date(pi.created * 1000);
-          const dd = String(d.getDate()).padStart(2,'0');
-          const mm = String(d.getMonth()+1).padStart(2,'0');
+          const dd   = String(d.getDate()).padStart(2,'0');
+          const mm   = String(d.getMonth()+1).padStart(2,'0');
           const yyyy = d.getFullYear();
-          const hh = String(d.getHours()).padStart(2,'0');
-          const min = String(d.getMinutes()).padStart(2,'0');
+          const hh   = String(d.getHours()).padStart(2,'0');
+          const min  = String(d.getMinutes()).padStart(2,'0');
           return `${dd}/${mm}/${yyyy}, ${hh}:${min}`;
         })(),
         stripe_id:   pi.id,
         receipt_url: receipt,
-        weight:      meta.weight_declared ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}` : '—',
-        origin_zip:      meta.origin_zip      || '—',
-        destination_zip: meta.destination_zip || '—',
-        label_url:       meta.label_url       || null,
+        weight,
+        origin_zip,
+        destination_zip,
+        label_url:   meta.label_url || null,
       };
     });
 
