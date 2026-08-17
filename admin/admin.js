@@ -828,6 +828,16 @@ function openDrawer(index) {
       <div class="drawer-row"><span>Amount Paid</span><strong style="color:#10b981;font-size:1.1rem">$${s.amount.toFixed(2)}</strong></div>
       ${s.carrier_price ? `<div class="drawer-row"><span>Carrier Cost</span><strong style="color:#94a3b8">$${s.carrier_price.toFixed(2)}</strong></div><div class="drawer-row"><span>CPARS Earnings</span><strong style="color:#f59e0b;font-size:1rem">$${(s.amount - s.carrier_price).toFixed(2)}</strong></div>` : ""}
     </div>
+    ${(s.liftgate_required || s.appointment_needed || s.access_restricted || s.residential || s.access_notes) ? `
+    <div class="drawer-section">
+      <div class="drawer-label"><i class="fa-solid fa-truck-moving" style="margin-right:6px;"></i>Special Handling & Access</div>
+      ${s.liftgate_required === 'true' || s.liftgate_required === true ? '<div class="drawer-row" style="color:#fbbf24;"><i class="fa-solid fa-check-circle" style="margin-right:6px;"></i><span>Lift-Gate Required</span></div>' : ''}
+      ${s.appointment_needed === 'true' || s.appointment_needed === true ? '<div class="drawer-row" style="color:#fbbf24;"><i class="fa-solid fa-check-circle" style="margin-right:6px;"></i><span>Appointment Needed</span></div>' : ''}
+      ${s.access_restricted === 'true' || s.access_restricted === true ? '<div class="drawer-row" style="color:#fbbf24;"><i class="fa-solid fa-check-circle" style="margin-right:6px;"></i><span>Access Restricted</span></div>' : ''}
+      ${s.residential === 'true' || s.residential === true ? '<div class="drawer-row" style="color:#fbbf24;"><i class="fa-solid fa-check-circle" style="margin-right:6px;"></i><span>Residential Delivery</span></div>' : ''}
+      ${s.access_notes ? `<div class="drawer-row"><span style="vertical-align:top;">Access Notes</span><strong style="color:#cbd5e1;font-size:0.9rem;text-align:right;">${s.access_notes}</strong></div>` : ''}
+    </div>
+    ` : ''}
     ${s.tracking_number ? `
     <div class="drawer-section">
       <div class="drawer-label">Tracking</div>

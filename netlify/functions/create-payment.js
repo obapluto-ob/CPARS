@@ -17,7 +17,7 @@ exports.handler = async (event) => {
 
   if (isRateLimited(event)) return rateLimitResponse();
 
-  const { amount, rate_id, customer_email, ref, carrier, service, carrier_code, service_code, weight_declared, weight_unit, weight_buffered_lbs, name, phone, origin, destination, origin_zip, destination_zip, carrier_price } = JSON.parse(event.body || '{}');
+  const { amount, rate_id, customer_email, ref, carrier, service, carrier_code, service_code, weight_declared, weight_unit, weight_buffered_lbs, name, phone, origin, destination, origin_zip, destination_zip, carrier_price, liftgate_required, appointment_needed, access_restricted, residential, access_notes } = JSON.parse(event.body || '{}');
 
   if (!amount || parseFloat(amount) < 1 || !customer_email || !ref) {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
@@ -48,6 +48,12 @@ exports.handler = async (event) => {
         origin_zip:           origin_zip           || '',
         destination_zip:      destination_zip      || '',
         carrier_price:        String(carrier_price  || ''),
+        // Special handling & access requirements
+        liftgate_required:    String(liftgate_required  || false),
+        appointment_needed:   String(appointment_needed || false),
+        access_restricted:    String(access_restricted || false),
+        residential:          String(residential       || false),
+        access_notes:         access_notes || '',
         tracking_number:      '',
         booking_status:       'pending'
       }

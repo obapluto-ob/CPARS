@@ -221,8 +221,21 @@
           e.target.classList.remove('input-error');
           const err = e.target.parentNode.querySelector('.field-error');
           if (err) err.remove();
+          // Update special handling section visibility
+          updateSpecialHandlingVisibility();
         }
       });
+    }
+
+    function updateSpecialHandlingVisibility() {
+      const serviceEl = document.getElementById('f-service');
+      const section = document.getElementById('specialHandlingSection');
+      if (!serviceEl || !section) return;
+      
+      const service = (serviceEl.value || '').toLowerCase();
+      // Show section for FTL, LTL, Hazmat, Hotshot, Expedited, Freight, Local
+      const showSection = /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service);
+      section.style.display = showSection ? 'block' : 'none';
     }
 
     function generateRef() {
@@ -564,6 +577,12 @@
           : document.getElementById('f-weight').value.trim(),
         pieces:         document.getElementById('f-pieces').value.trim() || '1',
         message:        document.getElementById('f-message').value.trim(),
+        // Special handling & access requirements
+        liftgate:       document.getElementById('f-liftgate')?.checked || false,
+        appointment:    document.getElementById('f-appointment')?.checked || false,
+        accessRestricted: document.getElementById('f-restricted')?.checked || false,
+        residential:    document.getElementById('f-residential')?.checked || false,
+        accessNotes:    document.getElementById('f-access-notes')?.value.trim() || '',
       };
 
       // Build full address strings for display
@@ -921,7 +940,13 @@
               destination:         currentFormData.destFull,
               origin_zip:          currentFormData.origin,
               destination_zip:     currentFormData.destination,
-              carrier_price:       selectedRate.carrier_price || ''
+              carrier_price:       selectedRate.carrier_price || '',
+              // Special handling & access requirements
+              liftgate_required:   currentFormData.liftgate,
+              appointment_needed:  currentFormData.appointment,
+              access_restricted:   currentFormData.accessRestricted,
+              residential:         currentFormData.residential,
+              access_notes:        currentFormData.accessNotes
             })
           });
           intentData = await intentRes.json();

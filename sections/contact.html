@@ -319,6 +319,51 @@
             </div>
           </div>
 
+          <!-- SPECIAL HANDLING & ACCESS (shown only for FTL/LTL/Hazmat/etc) -->
+          <div id="specialHandlingSection" style="display:none;background:#f0f9ff;border:2px solid #0ea5e9;border-radius:12px;padding:18px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <i class="fa-solid fa-truck-moving" style="color:#0ea5e9;font-size:1.2rem"></i>
+              <h4 style="margin:0;color:#1e293b">Special Handling & Access Requirements</h4>
+            </div>
+            <p style="color:#64748b;font-size:0.9rem;margin:0 0 14px;">Let us know what your shipment needs so carriers can quote you accurately:</p>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;background:#fff;border-radius:8px;border:1px solid #cbd5e1;transition:all 0.2s;">
+                <input type="checkbox" id="f-liftgate" style="width:18px;height:18px;cursor:pointer;"/>
+                <div>
+                  <strong style="color:#1e293b;display:block;font-size:0.9rem">Lift-Gate Required</strong>
+                  <span style="color:#94a3b8;font-size:0.78rem">No loading dock available</span>
+                </div>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;background:#fff;border-radius:8px;border:1px solid #cbd5e1;transition:all 0.2s;">
+                <input type="checkbox" id="f-appointment" style="width:18px;height:18px;cursor:pointer;"/>
+                <div>
+                  <strong style="color:#1e293b;display:block;font-size:0.9rem">Schedule Appointment</strong>
+                  <span style="color:#94a3b8;font-size:0.78rem">Specific time slot needed</span>
+                </div>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;background:#fff;border-radius:8px;border:1px solid #cbd5e1;transition:all 0.2s;">
+                <input type="checkbox" id="f-restricted" style="width:18px;height:18px;cursor:pointer;"/>
+                <div>
+                  <strong style="color:#1e293b;display:block;font-size:0.9rem">Access Restricted</strong>
+                  <span style="color:#94a3b8;font-size:0.78rem">Gated community, narrow street, etc</span>
+                </div>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;background:#fff;border-radius:8px;border:1px solid #cbd5e1;transition:all 0.2s;">
+                <input type="checkbox" id="f-residential" style="width:18px;height:18px;cursor:pointer;"/>
+                <div>
+                  <strong style="color:#1e293b;display:block;font-size:0.9rem">Residential Delivery</strong>
+                  <span style="color:#94a3b8;font-size:0.78rem">Home/apartment, not commercial</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="input-group">
+              <label>Access Notes <span class="req" style="color:#cbd5e1;">optional</span></label>
+              <textarea id="f-access-notes" placeholder="Gate codes, restricted hours, building access instructions, etc..." rows="2" style="resize:vertical;"></textarea>
+            </div>
+          </div>
+
           <div class="input-group">
             <label>Shipment Details <span class="req">*</span></label>
             <textarea id="f-message" placeholder="Describe your load — cargo type, dimensions, timeline..." rows="3"></textarea>
