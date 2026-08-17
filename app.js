@@ -221,21 +221,30 @@
           e.target.classList.remove('input-error');
           const err = e.target.parentNode.querySelector('.field-error');
           if (err) err.remove();
-          // Update special handling section visibility
-          updateSpecialHandlingVisibility();
+          // Update special handling + small package visibility
+          updateServiceVisibility();
         }
       });
     }
 
-    function updateSpecialHandlingVisibility() {
+    function updateServiceVisibility() {
       const serviceEl = document.getElementById('f-service');
-      const section = document.getElementById('specialHandlingSection');
-      if (!serviceEl || !section) return;
+      const specialHandlingSection = document.getElementById('specialHandlingSection');
+      const smallPackageInfo = document.getElementById('smallPackageInfo');
+      if (!serviceEl) return;
       
       const service = (serviceEl.value || '').toLowerCase();
-      // Show section for FTL, LTL, Hazmat, Hotshot, Expedited, Freight, Local
-      const showSection = /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service);
-      section.style.display = showSection ? 'block' : 'none';
+      
+      // Show small package info only for small packages
+      if (smallPackageInfo) {
+        smallPackageInfo.style.display = /small package|parcel/.test(service) ? 'block' : 'none';
+      }
+      
+      // Show special handling section for freight services (not small packages)
+      if (specialHandlingSection) {
+        const showSection = !/small package|parcel/.test(service) && /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service);
+        specialHandlingSection.style.display = showSection ? 'block' : 'none';
+      }
     }
 
     function generateRef() {
@@ -658,7 +667,8 @@
       if (weight > 150) {
         warnings.push('Heavy freight over 150 lb requires a custom freight quote.');
       }
-      if (/hazmat|ftl|ltl|hotshot|expedited|freight|local/.test(service)) {
+      // Only show special handling warning for freight services, not small packages
+      if (/hazmat|ftl|ltl|hotshot|expedited|freight|local/.test(service) && !/small package|parcel/.test(service)) {
         warnings.push('This route may need a lift-gate, appointment, or access review before booking.');
       }
       return warnings;
