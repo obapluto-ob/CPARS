@@ -781,15 +781,15 @@
 
     /* Carrier brand style map — stable, branded, and never broken */
     const CARRIER_BRANDS = {
-      ups:            { short: 'UPS', label: 'UPS', accent: '#f59e0b', bg: '#f59e0b' },
-      fedex_walleted: { short: 'FX', label: 'FedEx', accent: '#7c3aed', bg: '#7c3aed' },
-      fedex:          { short: 'FX', label: 'FedEx', accent: '#7c3aed', bg: '#7c3aed' },
-      stamps_com:     { short: 'SC', label: 'Stamps.com', accent: '#2563eb', bg: '#2563eb' },
-      usps:           { short: 'USPS', label: 'USPS', accent: '#2563eb', bg: '#2563eb' },
-      globalpost:     { short: 'GP', label: 'GlobalPost', accent: '#0ea5e9', bg: '#0ea5e9' },
-      dhl_express:    { short: 'DHL', label: 'DHL Express', accent: '#dc2626', bg: '#dc2626' },
-      dhl:            { short: 'DHL', label: 'DHL', accent: '#dc2626', bg: '#dc2626' },
-      ontrac:         { short: 'OT', label: 'OnTrac', accent: '#16a34a', bg: '#16a34a' },
+      ups:            { short: 'UPS', label: 'UPS', accent: '#f59e0b', bg: '#f59e0b', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M16 17h28l8 10v13c0 3-2.5 5.5-5.5 5.5H18.5C15.5 45.5 13 43 13 40V23l3-6zm3 3l-2 4h32l-2-4H19zm-4 8h34v12H15V28zm7.5-13h19l-1.4 3h-16.2l-1.4-3zm7.6 22.5c2.2 0 4-1.8 4-4 0-2.2-1.8-4-4-4s-4 1.8-4 4c0 2.2 1.8 4 4 4zm12.5-4c0 2.2 1.8 4 4 4s4-1.8 4-4-1.8-4-4-4-4 1.8-4 4zm-16.5 10.5h9.5v3h-9.5v-3zm13.7 0h9.5v3h-9.5v-3z" fill="white"/></svg>' },
+      fedex_walleted: { short: 'FX', label: 'FedEx', accent: '#7c3aed', bg: '#7c3aed', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M14 18h36v11H14V18zm4 14h28v14H18V32zm10-18h8v11h-8V14zm-4 22h16v10H24V36zm12-16h8v7h-8v-7z" fill="white"/><path d="M24 26h16v7H24v-7zm4 8h8v8h-8v-8z" fill="#d9b3ff"/></svg>' },
+      fedex:          { short: 'FX', label: 'FedEx', accent: '#7c3aed', bg: '#7c3aed', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M14 18h36v11H14V18zm4 14h28v14H18V32zm10-18h8v11h-8V14zm-4 22h16v10H24V36zm12-16h8v7h-8v-7z" fill="white"/><path d="M24 26h16v7H24v-7zm4 8h8v8h-8v-8z" fill="#d9b3ff"/></svg>' },
+      stamps_com:     { short: 'SC', label: 'Stamps.com', accent: '#2563eb', bg: '#2563eb', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="14" y="18" width="36" height="28" rx="6" fill="white" opacity="0.95"/><path d="M22 43V22h20v21H22zm4-9.5h12v3H26v-3zm0-5h12v3H26v-3z" fill="#2563eb"/></svg>' },
+      usps:           { short: 'USPS', label: 'USPS', accent: '#2563eb', bg: '#2563eb', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="16" width="40" height="32" rx="8" fill="white"/><path d="M20 32h24v4H20zm0-8h24v4H20zm-4 16h32v4H16zm0-20h32v4H16z" fill="#2563eb"/></svg>' },
+      globalpost:     { short: 'GP', label: 'GlobalPost', accent: '#0ea5e9', bg: '#0ea5e9', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="18" fill="white"/><path d="M32 14a18 18 0 0 1 0 36 18 18 0 0 1 0-36zm-1 4v28h2V18h-2zm-13 13h28v2H18v-2zm9-9h10v2H27v-2zm0 28h10v2H27v-2z" fill="#0ea5e9"/></svg>' },
+      dhl_express:    { short: 'DHL', label: 'DHL Express', accent: '#dc2626', bg: '#dc2626', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 18h28l10 14-10 14H18L8 32l10-14zm7 6l-6 9 6 9h10l-6-9 6-9H25zm13 0l-6 9 6 9h10l-6-9 6-9H38z" fill="white"/></svg>' },
+      dhl:            { short: 'DHL', label: 'DHL', accent: '#dc2626', bg: '#dc2626', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 18h28l10 14-10 14H18L8 32l10-14zm7 6l-6 9 6 9h10l-6-9 6-9H25zm13 0l-6 9 6 9h10l-6-9 6-9H38z" fill="white"/></svg>' },
+      ontrac:         { short: 'OT', label: 'OnTrac', accent: '#16a34a', bg: '#16a34a', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M16 18h32v28H16V18zm7 7h18v14H23V25zm4 4v6h10v-6H27zm-8 18h26v4H19v-4zm4-22h18v4H23v-4z" fill="white"/></svg>' },
     };
 
     function normalizeCarrierKey(value) {
@@ -924,7 +924,7 @@
           <div class="qcard ${isBest ? 'qcard-top' : ''}" id="quote-${i}" onclick="selectQuote(${i})">
             ${badge}
             <div class="qcard-photo" style="--accent:${cp.accent}; background:${cp.bg};">
-              <div class="carrier-logo-badge" style="background:${cp.bg}; border-color:${cp.accent};">${cp.short}</div>
+              <div class="carrier-logo-badge" style="background:${cp.bg}; border-color:${cp.accent};">${cp.icon || cp.short}</div>
               <div class="qcard-photo-overlay">
                 <span class="qcard-carrier-name">${cp.label}</span>
               </div>

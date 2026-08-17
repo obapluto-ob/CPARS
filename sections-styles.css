@@ -1358,19 +1358,21 @@
 }
 /* Carrier logo badge */
 .carrier-logo-badge {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  letter-spacing: -0.03em;
+  width: 110px;
+  height: 110px;
   border: 3px solid currentColor;
-  border-radius: 14px;
-  padding: 16px 22px;
+  border-radius: 18px;
+  padding: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 100px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 10px 30px rgba(15,23,42,0.18);
   transition: transform 0.3s ease;
+}
+.carrier-logo-badge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .qcard:hover .carrier-logo-badge { transform: scale(1.08); }
 
