@@ -227,23 +227,30 @@
       });
     }
 
+    function normalizeServiceKey(value) {
+      return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
     function updateServiceVisibility() {
       const serviceEl = document.getElementById('f-service');
       const specialHandlingSection = document.getElementById('specialHandlingSection');
       const smallPackageInfo = document.getElementById('smallPackageInfo');
       if (!serviceEl) return;
-      
-      const service = (serviceEl.value || '').toLowerCase();
-      
-      // Show small package info only for small packages
+
+      const rawService = serviceEl.value || serviceEl.options?.[serviceEl.selectedIndex]?.text || '';
+      const service = normalizeServiceKey(rawService);
+      const isSmallPackage = service === 'small-package' || /small-package|parcel/.test(service) || /small package|parcel/.test((rawService || '').toLowerCase());
+      const isFreightService = /full-truckload|less-than-truckload|local-hauling|hotshot-expedited|dry-van|hazmat|freight-coordination|ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service) || /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test((rawService || '').toLowerCase());
+
       if (smallPackageInfo) {
-        smallPackageInfo.style.display = /small package|parcel/.test(service) ? 'block' : 'none';
+        smallPackageInfo.style.display = isSmallPackage ? 'block' : 'none';
       }
-      
-      // Show special handling section for freight services (not small packages)
+
       if (specialHandlingSection) {
-        const showSection = !/small package|parcel/.test(service) && /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service);
-        specialHandlingSection.style.display = showSection ? 'block' : 'none';
+        specialHandlingSection.style.display = !isSmallPackage && isFreightService ? 'block' : 'none';
       }
     }
 
@@ -656,7 +663,10 @@
     function getRouteRiskWarnings(formData) {
       const warnings = [];
       const weight = parseFloat(formData.weightRaw || 0);
-      const service = (formData.service || '').toLowerCase();
+      const serviceRaw = formData.service || '';
+      const service = normalizeServiceKey(serviceRaw);
+      const isSmallPackage = service === 'small-package' || /small-package|parcel/.test(service) || /small package|parcel/.test(serviceRaw.toLowerCase());
+      const isFreightService = /full-truckload|less-than-truckload|local-hauling|hotshot-expedited|dry-van|hazmat|freight-coordination|ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service) || /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(serviceRaw.toLowerCase());
 
       if (!formData.originApt || !formData.destApt) {
         warnings.push('Apartment / suite is required for both pickup and destination.');
@@ -668,7 +678,7 @@
         warnings.push('Heavy freight over 150 lb requires a custom freight quote.');
       }
       // Only show special handling warning for freight services, not small packages
-      if (/hazmat|ftl|ltl|hotshot|expedited|freight|local/.test(service) && !/small package|parcel/.test(service)) {
+      if (isFreightService && !isSmallPackage) {
         warnings.push('This route may need a lift-gate, appointment, or access review before booking.');
       }
       return warnings;
