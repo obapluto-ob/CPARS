@@ -156,6 +156,7 @@ async function loadActivity() {
 
     allShipments = data.shipments;
     window._stripeShipments = data.shipments;
+    renderOperationalAlerts(data.shipments);
     renderTable(allShipments);
     updateTopbarStats(data);
 
@@ -164,6 +165,30 @@ async function loadActivity() {
     errEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Could not load Stripe data: ${err.message}`;
     tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-circle-xmark"></i> Failed to load</div></td></tr>';
   }
+}
+
+function renderOperationalAlerts(shipments) {
+  const host = document.getElementById('operationalAlerts');
+  if (!host) return;
+
+  const pending  = shipments.filter(s => s.paid && (s.booking_status === 'pending' || !s.booking_status)).length;
+  const missingDest = shipments.filter(s => s.paid && (!s.destination || s.destination === '—' || /zip:/i.test(String(s.destination)))).length;
+  const failed = shipments.filter(s => !s.paid && s.status === 'canceled').length;
+
+  host.innerHTML = `
+    <div class="alert-banner${pending ? ' warn' : ''}">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span><strong>${pending}</strong> paid orders are still pending booking.</span>
+    </div>
+    <div class="alert-banner${missingDest ? ' danger' : ''}">
+      <i class="fa-solid fa-location-crosshairs"></i>
+      <span><strong>${missingDest}</strong> paid orders need destination / ZIP verification.</span>
+    </div>
+    <div class="alert-banner${failed ? ' danger' : ''}">
+      <i class="fa-solid fa-circle-xmark"></i>
+      <span><strong>${failed}</strong> failed or canceled orders need attention.</span>
+    </div>
+  `;
 }
 
 function renderTable(shipments) {

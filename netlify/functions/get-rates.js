@@ -49,24 +49,36 @@ exports.handler = async (event) => {
 
   try {
     const carrierIds = await getCarrierIds(API_KEY);
+    const rateRequest = {
+      from_country_code: 'US',
+      from_postal_code:  origin_zip,
+      from_city_locality: origin_city   || 'Houston',
+      from_state_province: origin_state || 'TX',
+      to_country_code:   'US',
+      to_postal_code:    destination_zip,
+      to_city_locality:  dest_city   || '',
+      to_state_province: dest_state  || '',
+      weight: { value: weightNum, unit: 'pound' }
+    };
+
+    if (carrierIds.length) rateRequest.carrier_ids = carrierIds;
+
+    console.log('ShipEngine rate request debug', {
+      carrierCount: carrierIds.length,
+      carrierIds: carrierIds.slice(0, 25),
+      origin_zip,
+      destination_zip,
+      weightNum,
+      fallbackUsed: carrierIds.length === 0
+    });
+
     const res = await fetch('https://api.shipengine.com/v1/rates/estimate', {
       method: 'POST',
       headers: {
         'API-Key': API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        carrier_ids:       carrierIds,
-        from_country_code: 'US',
-        from_postal_code:  origin_zip,
-        from_city_locality: origin_city   || 'Houston',
-        from_state_province: origin_state || 'TX',
-        to_country_code:   'US',
-        to_postal_code:    destination_zip,
-        to_city_locality:  dest_city   || '',
-        to_state_province: dest_state  || '',
-        weight: { value: weightNum, unit: 'pound' }
-      })
+      body: JSON.stringify(rateRequest)
     });
 
     const data = await res.json();
@@ -83,6 +95,7 @@ exports.handler = async (event) => {
     // data is an array of rate objects
     const rateList = Array.isArray(data) ? data : (data.rates || []);
 
+    const carrierSummary = {};
     let rates = [];
     rateList.forEach(rate => {
       if (
@@ -92,6 +105,9 @@ exports.handler = async (event) => {
         (!rate.error_messages || rate.error_messages.length === 0)
       ) {
         const base = rate.shipping_amount.amount;
+        const carrierKey = (rate.carrier_friendly_name || rate.carrier_id || 'Unknown').toString();
+        carrierSummary[carrierKey] = (carrierSummary[carrierKey] || 0) + 1;
+
         rates.push({
           carrier:        rate.carrier_friendly_name || rate.carrier_id,
           carrier_code:   rate.carrier_id,
@@ -117,6 +133,13 @@ exports.handler = async (event) => {
     const fastest = [...rates].sort((a, b) => (a.delivery_days || 99) - (b.delivery_days || 99))[0];
     if (fastest) fastest.tags = [...new Set([...fastest.tags, 'fastest'])];
 
+    console.log('ShipEngine rate response debug', {
+      totalReturned: rateList.length,
+      validRates: rates.length,
+      carrierSummary,
+      carrierIdsUsed: carrierIds
+    });
+
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
@@ -125,7 +148,13 @@ exports.handler = async (event) => {
         weight_used:     weightNum,
         weight_declared: parseFloat(weight),
         weight_unit:     weight_unit || 'lbs',
-        weight_buffered: true
+        weight_buffered: true,
+        carrier_debug: {
+          connected_carrier_count: carrierIds.length,
+          connected_carriers: carrierIds,
+          returned_carrier_summary: carrierSummary,
+          fallback_used: carrierIds.length === 0
+        }
       })
     };
 

@@ -537,6 +537,14 @@
         ? wRaw + ' kg (' + currentFormData.weight + ' lbs)'
         : currentFormData.weight + ' lbs (' + (parseFloat(currentFormData.weight)/2.20462).toFixed(2) + ' kg)';
 
+      const routeRisks = getRouteRiskWarnings(currentFormData);
+      if (routeRisks.length) {
+        note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + routeRisks.join(' • ');
+        note.style.color = '#fbbf24';
+        document.getElementById('quoteForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return false;
+      }
+
       currentRef = generateRef();
 
       btn.disabled = true;
@@ -569,16 +577,36 @@
         } else if (data.rates && data.rates.length > 0) {
           showQuotes(data.rates);
         } else {
-          showEstimatedQuotes();
+          showEstimatedQuotes(data);
         }
       } catch {
-        showEstimatedQuotes();
+        showEstimatedQuotes({});
       }
 
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-dollar"></i> Get Instant Quotes';
       return false;
     };
+
+    function getRouteRiskWarnings(formData) {
+      const warnings = [];
+      const weight = parseFloat(formData.weightRaw || 0);
+      const service = (formData.service || '').toLowerCase();
+
+      if (!formData.originApt || !formData.destApt) {
+        warnings.push('Apartment / suite is required for both pickup and destination.');
+      }
+      if (!formData.origin || !formData.destination) {
+        warnings.push('ZIP code is required for pickup and destination.');
+      }
+      if (weight > 150) {
+        warnings.push('Heavy freight over 150 lb requires a custom freight quote.');
+      }
+      if (/hazmat|ftl|ltl|hotshot|expedited|freight|local/.test(service)) {
+        warnings.push('This route may need a lift-gate, appointment, or access review before booking.');
+      }
+      return warnings;
+    }
 
     function showHeavyFreightPanel() {
       const list = document.getElementById('quotesList');
@@ -622,17 +650,30 @@
       document.getElementById('quotesPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    function showEstimatedQuotes() {
-      // ShipEngine returned no live rates — show contact-for-quote instead of fake prices
+    function showEstimatedQuotes(data = {}) {
+      // ShipEngine returned no live rates — explain the real cause and keep the flow honest.
+      const debug = data.carrier_debug || {};
+      const connected = Array.isArray(debug.connected_carriers) ? debug.connected_carriers : [];
+      const summary = debug.returned_carrier_summary || {};
+      const connectedList = connected.length ? connected.join(', ') : 'No connected carriers reported by ShipEngine';
+      const summaryList = Object.keys(summary).length
+        ? Object.entries(summary).map(([name, count]) => `${name} (${count})`).join(' • ')
+        : 'No valid carrier rates returned for this route';
+
       const list = document.getElementById('quotesList');
       list.innerHTML = `
         <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:32px 24px;text-align:center;">
           <i class="fa-solid fa-truck-moving" style="font-size:2.5rem;color:#3b82f6;margin-bottom:16px;display:block"></i>
           <h3 style="color:#f1f5f9;font-size:1.1rem;margin-bottom:10px">Live Rates Unavailable Right Now</h3>
-          <p style="color:#94a3b8;font-size:0.88rem;line-height:1.7;max-width:420px;margin:0 auto 20px">
-            We couldn't fetch live carrier rates for this route at this moment.
-            This can happen if the route requires a freight quote or if our carrier connection needs a moment.
+          <p style="color:#94a3b8;font-size:0.88rem;line-height:1.7;max-width:520px;margin:0 auto 16px">
+            We couldn't fetch live carrier rates for this route at this moment. This is usually caused by route restrictions,
+            carrier eligibility, or by the specific carrier list currently enabled in ShipEngine for this account.
           </p>
+          <div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px 14px;text-align:left;margin:0 auto 18px;max-width:560px;color:#cbd5e1;line-height:1.6;font-size:0.8rem;">
+            <strong style="color:#f1f5f9;">Carrier diagnostics:</strong><br>
+            Connected carriers: ${connectedList}<br>
+            Returned carriers: ${summaryList}
+          </div>
           <p style="color:#f1f5f9;font-size:0.92rem;font-weight:600;margin-bottom:18px">
             Call or email us — we'll give you an accurate quote within minutes.
           </p>
