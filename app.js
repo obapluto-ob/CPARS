@@ -771,7 +771,6 @@
                 <div class="qcard-price">$${r.cpars_price.toLocaleString('en-US',{minimumFractionDigits:2})}</div>
                 <div class="qcard-price-note">Includes CPARS handling &amp; coordination</div>
               </div>
-              <div class="qcard-profit-line">CPARS margin: ${margin}%</div>
               <button class="qcard-select-btn">Select This Rate <i class="fa-solid fa-arrow-right"></i></button>
             </div>
           </div>
