@@ -660,6 +660,27 @@
       return false;
     };
 
+    function normalizeAddressText(value) {
+      return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+    }
+
+    function looksLikeSameRoute(formData) {
+      const originZip = String(formData.origin || '').replace(/\D/g, '');
+      const destZip = String(formData.destination || '').replace(/\D/g, '');
+      const originCity = normalizeAddressText(formData.originCityOnly || formData.originCity || '');
+      const destCity = normalizeAddressText(formData.destCityOnly || formData.destCity || '');
+      const originStreet = normalizeAddressText(formData.originStreet || '');
+      const destStreet = normalizeAddressText(formData.destStreet || '');
+
+      if (!originZip || !destZip) return false;
+      if (originZip === destZip && originCity && destCity && originCity === destCity) return true;
+      if (originZip === destZip && originStreet && destStreet && (originStreet === destStreet || originStreet.includes(destStreet) || destStreet.includes(originStreet))) return true;
+      if (originCity && destCity && originCity === destCity && originStreet && destStreet && (originStreet === destStreet || originStreet.includes(destStreet) || destStreet.includes(originStreet))) return true;
+      return false;
+    }
+
     function getRouteRiskWarnings(formData) {
       const warnings = [];
       const weight = parseFloat(formData.weightRaw || 0);
@@ -682,6 +703,9 @@
       }
       if (!formData.origin || !formData.destination) {
         warnings.push('ZIP code is required for pickup and destination.');
+      }
+      if (looksLikeSameRoute(formData)) {
+        warnings.push('Pickup and destination appear to be the same route. Please confirm they are different before continuing.');
       }
       if (weight > 150 && isFreightService && !isSmallPackage) {
         warnings.push('Heavy freight over 150 lb requires a custom freight quote. Please call CPARS at +1 (352) 213-8976 for a manual freight review.');
