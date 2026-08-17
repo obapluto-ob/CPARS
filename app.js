@@ -773,11 +773,50 @@
       ontrac:         { short: 'OT', label: 'OnTrac', accent: '#16a34a', bg: '#16a34a' },
     };
 
-    function getCarrierPhoto(carrierCode) {
-      const key = (carrierCode || '').toLowerCase();
-      return CARRIER_BRANDS[key] ||
-        CARRIER_BRANDS[Object.keys(CARRIER_BRANDS).find(k => key.includes(k)) || ''] ||
-        { short: 'CP', label: carrierCode || 'Carrier', accent: '#1a56db', bg: '#1a56db' };
+    function normalizeCarrierKey(value) {
+      return String(value || '')
+        .toLowerCase()
+        .replace(/®/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function getCarrierPhoto(carrierValue) {
+      const raw = String(carrierValue || '').trim();
+      const key = normalizeCarrierKey(raw);
+      if (!raw) return { short: 'CP', label: 'Carrier', accent: '#1a56db', bg: '#1a56db' };
+
+      if (CARRIER_BRANDS[key]) return CARRIER_BRANDS[key];
+
+      const directMatch = Object.entries(CARRIER_BRANDS).find(([brandKey, brand]) => {
+        if (!brandKey) return false;
+        if (key.includes(brandKey)) return true;
+        if (normalizeCarrierKey(brand.label).includes(key)) return true;
+        return false;
+      });
+      if (directMatch) return directMatch[1];
+
+      if (/^se-/.test(key) || /shipengine|carrier_id/.test(key)) {
+        return { short: 'CP', label: 'Carrier', accent: '#1a56db', bg: '#1a56db' };
+      }
+
+      return { short: raw.slice(0, 2).toUpperCase() || 'CP', label: raw || 'Carrier', accent: '#1a56db', bg: '#1a56db' };
+    }
+
+    function dedupeRates(rates) {
+      const seen = new Set();
+      return (rates || []).filter((rate) => {
+        const key = [
+          String(rate?.carrier || rate?.carrier_name || 'unknown').trim().toLowerCase(),
+          String(rate?.service || 'standard').trim().toLowerCase(),
+          Number(rate?.cpars_price || 0).toFixed(2),
+          String(rate?.delivery_label || rate?.delivery_days || '').trim().toLowerCase()
+        ].join('|');
+
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
     function setStep(n) {
@@ -793,10 +832,10 @@
     }
 
     function showQuotes(rates) {
-      const list   = document.getElementById('quotesList');
+      const list = document.getElementById('quotesList');
+      const uniqueRates = dedupeRates(rates);
 
-
-      list.innerHTML = rates.map((r, i) => {
+      list.innerHTML = uniqueRates.map((r, i) => {
         const tags      = r.tags || [];
         const isBest    = tags.includes('best_value') || tags.includes('cheapest');
         const isFastest = tags.includes('fastest') && !isBest;
@@ -807,8 +846,7 @@
           ? `<div class="qcard-badge badge-fast"><i class="fa-solid fa-bolt"></i> Fastest</div>`
           : '';
 
-        const cp    = getCarrierPhoto(r.carrier_code || r.carrier);
-        const margin = ((r.cpars_price - r.carrier_price) / r.carrier_price * 100).toFixed(0);
+        const cp = getCarrierPhoto(r.carrier || r.carrier_code || 'Carrier');
 
         const deliveryDate = r.delivery_days
           ? (() => { const d = new Date(); d.setDate(d.getDate() + parseInt(r.delivery_days) + 1); return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); })()
@@ -843,7 +881,7 @@
         `;
       }).join('');
 
-      window._currentRates = rates;
+      window._currentRates = uniqueRates;
       setStep(2);
       document.getElementById('quoteForm').style.display   = 'none';
       document.getElementById('quotesPanel').style.display = 'block';
