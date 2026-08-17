@@ -389,7 +389,6 @@
       const st = document.getElementById('phone-status');
       if (st) st.innerHTML = v.replace(/\D/g,'').length === 10
         ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
-        : '';
     };
 
     /* ══════════════════════════════
@@ -403,7 +402,6 @@
         ? valid
           ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
           : '<i class="fa-solid fa-circle-xmark" style="color:#dc2626"></i>'
-        : '';
     };
 
     // Payment recovery — handle ?recover=REF&email=EMAIL&amount=AMOUNT in URL
@@ -562,7 +560,9 @@
 
         const data = await res.json();
 
-        if (data.rates && data.rates.length > 0) {
+        if (data.exceeded_parcel_limit) {
+          showHeavyFreightPanel();
+        } else if (data.rates && data.rates.length > 0) {
           showQuotes(data.rates);
         } else {
           showEstimatedQuotes();
@@ -575,6 +575,48 @@
       btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-dollar"></i> Get Instant Quotes';
       return false;
     };
+
+    function showHeavyFreightPanel() {
+      const list = document.getElementById('quotesList');
+      const w    = currentFormData ? currentFormData.weightDisplay || (currentFormData.weightRaw + ' ' + currentFormData.weightUnit) : '';
+      list.innerHTML = `
+        <div style="background:#1e293b;border:2px solid #f59e0b;border-radius:14px;padding:28px 24px;">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+            <div style="background:#f59e0b;border-radius:12px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fa-solid fa-truck-moving" style="font-size:1.5rem;color:#fff"></i>
+            </div>
+            <div>
+              <h3 style="color:#fbbf24;margin:0 0 4px;font-size:1.05rem">Heavy Freight — Custom Quote Required</h3>
+              <p style="color:#94a3b8;font-size:0.85rem;margin:0">Your shipment (${w}) exceeds the 150 lb parcel limit. This requires a freight-class quote.</p>
+            </div>
+          </div>
+          <div style="background:#0f172a;border-radius:10px;padding:16px 18px;margin-bottom:18px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.83rem">
+              <div style="color:#64748b">Pickup</div><div style="color:#f1f5f9;font-weight:600">${currentFormData?.originFull || '—'}</div>
+              <div style="color:#64748b">Destination</div><div style="color:#f1f5f9;font-weight:600">${currentFormData?.destFull || '—'}</div>
+              <div style="color:#64748b">Weight</div><div style="color:#f1f5f9;font-weight:600">${w}</div>
+              <div style="color:#64748b">Service</div><div style="color:#f1f5f9;font-weight:600">${currentFormData?.service || '—'}</div>
+            </div>
+          </div>
+          <p style="color:#f1f5f9;font-size:0.9rem;font-weight:600;margin:0 0 6px">We'll give you an accurate freight rate within minutes:</p>
+          <p style="color:#94a3b8;font-size:0.82rem;margin:0 0 16px">Your shipment details above have been captured. Just call or email us and we'll quote you immediately.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="tel:+13522138976" class="btn-primary" style="padding:11px 22px;font-size:0.88rem">
+              <i class="fa-solid fa-phone"></i> Call +1 (352) 213-8976
+            </a>
+            <a href="mailto:cparstransportation@cparstransportationcom.com?subject=Heavy Freight Quote — ${encodeURIComponent(w)}&body=Pickup: ${encodeURIComponent(currentFormData?.originFull||'')}%0ADestination: ${encodeURIComponent(currentFormData?.destFull||'')}%0AWeight: ${encodeURIComponent(w)}%0AService: ${encodeURIComponent(currentFormData?.service||'')}" class="btn-outline-dark" style="padding:11px 22px;font-size:0.88rem">
+              <i class="fa-solid fa-envelope"></i> Email for Quote
+            </a>
+          </div>
+          <p style="color:#475569;font-size:0.78rem;margin:14px 0 0"><i class="fa-solid fa-circle-info"></i> Parcel carriers (UPS, FedEx, USPS) cap at 150 lbs per package. Shipments above this use LTL or FTL freight pricing which requires a custom rate.</p>
+        </div>
+      `;
+      window._currentRates = [];
+      setStep(2);
+      document.getElementById('quoteForm').style.display   = 'none';
+      document.getElementById('quotesPanel').style.display = 'block';
+      document.getElementById('quotesPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     function showEstimatedQuotes() {
       // ShipEngine returned no live rates — show contact-for-quote instead of fake prices
@@ -641,13 +683,9 @@
 
     function showQuotes(rates) {
       const list   = document.getElementById('quotesList');
-      const weight = parseFloat(currentFormData.weight) || 0;
 
-      const weightAlert = weight > 150
-        ? `<div class="weight-alert"><i class="fa-solid fa-triangle-exclamation"></i><span>Your cargo weight (${weight} lbs) exceeds parcel carrier limits (150 lbs max per package). Showing estimated freight rates — a CPARS team member will confirm the final price within the hour.</span></div>`
-        : '';
 
-      list.innerHTML = weightAlert + rates.map((r, i) => {
+      list.innerHTML = rates.map((r, i) => {
         const tags      = r.tags || [];
         const isBest    = tags.includes('best_value') || tags.includes('cheapest');
         const isFastest = tags.includes('fastest') && !isBest;
