@@ -297,26 +297,49 @@
 
     function setupFreeAutocomplete(streetId, cityId, zipId, statusId, hintId) {
       const input = document.getElementById(streetId);
-      if (!input) return;
+      if (!input) {
+        console.warn('Autocomplete: input not found', streetId);
+        return;
+      }
 
-      // Create dropdown container
+      // Create dropdown container with proper z-index isolation
       const drop = document.createElement('div');
       drop.className = 'addr-dropdown';
-      drop.style.cssText = 'position:absolute;z-index:9999;background:#1e293b;border:1px solid #334155;border-radius:8px;width:100%;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);display:none;top:100%;left:0;';
-      input.parentNode.style.position = 'relative';
-      input.parentNode.appendChild(drop);
+      drop.style.cssText = 'position:absolute;z-index:99999;background:#1e293b;border:1px solid #334155;border-radius:8px;width:calc(100% + 28px);max-height:280px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);display:none;top:calc(100% + 4px);left:-14px;margin-top:0;';
+      
+      // Ensure parent positioning context
+      const parent = input.parentNode;
+      const parentStyle = window.getComputedStyle(parent).position;
+      if (parentStyle === 'static') {
+        parent.style.position = 'relative';
+      }
+      parent.style.overflow = 'visible';
+      parent.appendChild(drop);
       _acDropdowns[streetId] = drop;
 
       input.addEventListener('input', () => {
         clearTimeout(_acTimers[streetId]);
         const q = input.value.trim();
-        if (q.length < 4) { drop.style.display = 'none'; return; }
-        _acTimers[streetId] = setTimeout(() => fetchAddressSuggestions(q, streetId, cityId, zipId, statusId), 350);
+        if (q.length < 3) {
+          drop.style.display = 'none';
+          return;
+        }
+        drop.innerHTML = '<div style="padding:10px 14px;color:#94a3b8;font-size:0.8rem;">Searching...</div>';
+        drop.style.display = 'block';
+        _acTimers[streetId] = setTimeout(() => fetchAddressSuggestions(q, streetId, cityId, zipId, statusId), 300);
+      });
+
+      input.addEventListener('focus', () => {
+        if (_acDropdowns[streetId]?.innerHTML && input.value.trim().length >= 3) {
+          _acDropdowns[streetId].style.display = 'block';
+        }
       });
 
       // Close dropdown on outside click
       document.addEventListener('click', (e) => {
-        if (!input.parentNode.contains(e.target)) drop.style.display = 'none';
+        if (!input.parentNode.contains(e.target)) {
+          drop.style.display = 'none';
+        }
       });
     }
 
@@ -324,27 +347,41 @@
       const drop = _acDropdowns[streetId];
       if (!drop) return;
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=us&limit=6&q=${encodeURIComponent(query)}`;
-        const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=us&limit=8&q=${encodeURIComponent(query)}`;
+        const res  = await fetch(url, { 
+          headers: { 'Accept-Language': 'en', 'User-Agent': 'CPARS-Freight' },
+          signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+        });
+        if (!res.ok) {
+          drop.innerHTML = '<div style="padding:10px 14px;color:#f87171;font-size:0.8rem;">Network error — check your connection</div>';
+          return;
+        }
         const data = await res.json();
-        if (!data.length) { drop.style.display = 'none'; return; }
+        if (!data || !data.length) {
+          drop.innerHTML = '<div style="padding:10px 14px;color:#cbd5e1;font-size:0.8rem;">No addresses found — try a different search</div>';
+          return;
+        }
         drop.innerHTML = '';
         data.forEach(item => {
           const a      = item.address || {};
-          const street = [(a.house_number || ''), (a.road || '')].filter(Boolean).join(' ');
+          const street = [(a.house_number || ''), (a.road || '')].filter(Boolean).join(' ').trim();
           const city   = a.city || a.town || a.village || a.county || '';
-          const state  = a.state_code || a.state || '';
+          const state  = a.state_code ? a.state_code.toUpperCase() : (a.state || '');
           const zip    = a.postcode || '';
           const div = document.createElement('div');
-          div.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid #334155;font-size:0.85rem;color:#f1f5f9;line-height:1.4;';
-          div.textContent = item.display_name;
-          div.addEventListener('mouseover', () => { div.style.background = '#334155'; });
+          div.style.cssText = 'padding:12px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:0.85rem;color:#f1f5f9;line-height:1.5;transition:background 0.15s;';
+          div.innerHTML = `<div style="font-weight:600;color:#cbd5e1;">${street || city}</div><div style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">${item.display_name.split(',').slice(0,3).join(', ')}</div>`;
+          div.addEventListener('mouseover', () => { div.style.background = 'rgba(51,65,85,0.8)'; });
           div.addEventListener('mouseout',  () => { div.style.background = ''; });
-          div.addEventListener('mousedown', () => fillAddress(streetId, cityId, zipId, statusId, street, city, state, zip));
+          div.addEventListener('click', () => fillAddress(streetId, cityId, zipId, statusId, street, city, state, zip));
           drop.appendChild(div);
         });
         drop.style.display = 'block';
-      } catch { drop.style.display = 'none'; }
+      } catch(e) {
+        console.error('Autocomplete fetch failed:', e);
+        drop.innerHTML = '<div style="padding:10px 14px;color:#f87171;font-size:0.8rem;">Service temporarily unavailable</div>';
+        drop.style.display = 'block';
+      }
     }
 
     function fillAddress(streetId, cityId, zipId, statusId, street, city, state, zip) {
