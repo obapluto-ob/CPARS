@@ -601,6 +601,8 @@
         accessNotes:    document.getElementById('f-access-notes')?.value.trim() || '',
       };
 
+      toggleRouteWarningVisibility();
+
       // Build full address strings for display
       currentFormData.originFull   = [currentFormData.originStreet, currentFormData.originApt, currentFormData.originCity, currentFormData.origin].filter(Boolean).join(', ');
       currentFormData.destFull     = [currentFormData.destStreet,   currentFormData.destApt,   currentFormData.destCity,   currentFormData.destination].filter(Boolean).join(', ');
@@ -610,6 +612,18 @@
         : currentFormData.weight + ' lbs (' + (parseFloat(currentFormData.weight)/2.20462).toFixed(2) + ' kg)';
 
       const routeRisks = getRouteRiskWarnings(currentFormData);
+      const routeConfirmBox = document.getElementById('routeConfirmBox');
+      const routeConfirmInput = document.getElementById('route-confirm-checkbox');
+      const sameRoute = looksLikeSameRoute(currentFormData);
+
+      if (sameRoute && (!routeConfirmBox || !routeConfirmInput || !routeConfirmInput.checked)) {
+        note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please confirm the pickup and destination are different addresses before continuing.';
+        note.style.color = '#fbbf24';
+        toggleRouteWarningVisibility();
+        document.getElementById('quoteForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return false;
+      }
+
       if (routeRisks.length) {
         note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + routeRisks.join(' • ');
         note.style.color = '#fbbf24';
@@ -715,6 +729,17 @@
         warnings.push('This route may need a lift-gate, appointment, or access review before booking. Please confirm those requirements with CPARS before payment.');
       }
       return warnings;
+    }
+
+    function toggleRouteWarningVisibility() {
+      const box = document.getElementById('routeConfirmBox');
+      const input = document.getElementById('route-confirm-checkbox');
+      if (!box || !input) return;
+
+      const form = currentFormData || {};
+      const sameRoute = looksLikeSameRoute(form);
+      box.style.display = sameRoute ? 'block' : 'none';
+      if (!sameRoute) input.checked = false;
     }
 
     function showHeavyFreightPanel() {

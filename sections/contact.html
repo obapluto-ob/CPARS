@@ -376,6 +376,20 @@
             <textarea id="f-message" placeholder="Describe your load — cargo type, dimensions, timeline..." rows="3"></textarea>
           </div>
 
+          <div id="routeConfirmBox" style="display:none;background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <i class="fa-solid fa-circle-exclamation" style="color:#f59e0b;font-size:1.1rem;margin-top:2px;"></i>
+              <div>
+                <strong style="display:block;color:#9a5b00;margin-bottom:4px;">Route Confirmation Required</strong>
+                <p style="margin:0;color:#7c2d12;font-size:0.85rem;line-height:1.5;">The pickup and destination appear to be the same route. Please confirm they are different before continuing.</p>
+                <label style="display:flex;align-items:center;gap:8px;margin-top:10px;color:#7c2d12;font-size:0.85rem;cursor:pointer;">
+                  <input type="checkbox" id="route-confirm-checkbox" />
+                  I confirm the pickup and destination are different addresses.
+                </label>
+              </div>
+            </div>
+          </div>
+
           <button type="submit" class="btn-primary btn-full" id="submitBtn">
             <i class="fa-solid fa-magnifying-glass-dollar"></i> Get Instant Quotes
           </button>
