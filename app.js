@@ -684,11 +684,11 @@
         warnings.push('ZIP code is required for pickup and destination.');
       }
       if (weight > 150 && isFreightService && !isSmallPackage) {
-        warnings.push('Heavy freight over 150 lb requires a custom freight quote.');
+        warnings.push('Heavy freight over 150 lb requires a custom freight quote. Please call CPARS at +1 (352) 213-8976 for a manual freight review.');
       }
       // Only show special handling warning for actual freight services, not small packages
       if (isFreightService && !isSmallPackage) {
-        warnings.push('This route may need a lift-gate, appointment, or access review before booking.');
+        warnings.push('This route may need a lift-gate, appointment, or access review before booking. Please confirm those requirements with CPARS before payment.');
       }
       return warnings;
     }
@@ -849,6 +849,53 @@
         if (line) line.classList.toggle('done', i < n);
       }
     }
+
+    async function refreshQuotes() {
+      if (!currentFormData) return;
+      const btn = document.getElementById('refreshQuotesBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing...';
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/get-rates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weight:          currentFormData.weightRaw,
+            weight_unit:     currentFormData.weightUnit,
+            origin_zip:      currentFormData.origin,
+            origin_street:   currentFormData.originStreet,
+            origin_city:     currentFormData.originCityOnly,
+            origin_state:    currentFormData.originState,
+            destination_zip: currentFormData.destination,
+            dest_street:     currentFormData.destStreet,
+            dest_city:       currentFormData.destCityOnly,
+            dest_state:      currentFormData.destState,
+            service_type:    currentFormData.service
+          })
+        });
+        const data = await res.json();
+
+        if (data.exceeded_parcel_limit) {
+          showHeavyFreightPanel();
+        } else if (data.rates && data.rates.length > 0) {
+          showQuotes(data.rates);
+        } else {
+          showEstimatedQuotes(data);
+        }
+      } catch {
+        showEstimatedQuotes({});
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Refresh Quotes';
+      }
+    }
+
+    window.refreshQuotes = refreshQuotes;
 
     function showQuotes(rates) {
       const list = document.getElementById('quotesList');

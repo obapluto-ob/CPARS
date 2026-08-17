@@ -397,9 +397,14 @@
             <button class="qfilter-btn" onclick="filterQuotes('economy', this)">Economy</button>
           </div>
           <div id="quotesList" class="quotes-list"></div>
-          <button class="btn-outline-dark" onclick="backToForm()" style="margin-top:16px;">
-            <i class="fa-solid fa-arrow-left"></i> Edit Shipment Details
-          </button>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+            <button class="btn-outline-dark" onclick="backToForm()">
+              <i class="fa-solid fa-arrow-left"></i> Edit Shipment Details
+            </button>
+            <button id="refreshQuotesBtn" class="btn-outline-dark" onclick="refreshQuotes()">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Quotes
+            </button>
+          </div>
         </div>
 
         <!-- STEP 3: PAYMENT PANEL -->
