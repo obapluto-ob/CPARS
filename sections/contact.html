@@ -371,6 +371,31 @@
             </div>
           </div>
 
+          <div id="freightDetailsSection" style="display:none;background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:18px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <i class="fa-solid fa-truck-ramp-box" style="color:#f59e0b;font-size:1.2rem"></i>
+              <h4 style="margin:0;color:#1e293b">Freight Details</h4>
+            </div>
+            <div class="form-row">
+              <div class="input-group">
+                <label>Commodity / Cargo Type <span class="req">*</span></label>
+                <input type="text" id="f-commodity" placeholder="e.g. HVAC equipment, pallets of boxed goods, machinery" />
+              </div>
+              <div class="input-group">
+                <label>Pallets / Pieces</label>
+                <input type="number" id="f-pallets" placeholder="e.g. 4" min="1" />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>Dimensions (L x W x H) <span class="req">*</span></label>
+              <input type="text" id="f-dimensions" placeholder="e.g. 48 x 40 x 36 in, 2 pallets, 12 ft trailer" />
+            </div>
+            <div class="input-group">
+              <label>Freight Notes</label>
+              <textarea id="f-freight-notes" placeholder="Any route, access, time windows, dock, or equipment notes..." rows="2" style="resize:vertical;"></textarea>
+            </div>
+          </div>
+
           <div class="input-group">
             <label>Shipment Details <span class="req">*</span></label>
             <textarea id="f-message" placeholder="Describe your load — cargo type, dimensions, timeline..." rows="3"></textarea>

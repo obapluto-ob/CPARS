@@ -234,16 +234,32 @@
         .replace(/^-+|-+$/g, '');
     }
 
+    function isFreightServiceValue(serviceValue) {
+      const serviceRaw = String(serviceValue || '');
+      const service = normalizeServiceKey(serviceRaw);
+      const freightServices = [
+        'full-truckload',
+        'less-than-truckload',
+        'local-hauling',
+        'hotshot-expedited',
+        'dry-van',
+        'hazmat',
+        'freight-coordination'
+      ];
+      return freightServices.includes(service) || freightServices.some(s => service.includes(s)) || /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(serviceRaw.toLowerCase());
+    }
+
     function updateServiceVisibility() {
       const serviceEl = document.getElementById('f-service');
       const specialHandlingSection = document.getElementById('specialHandlingSection');
       const smallPackageInfo = document.getElementById('smallPackageInfo');
+      const freightDetailsSection = document.getElementById('freightDetailsSection');
       if (!serviceEl) return;
 
       const rawService = serviceEl.value || serviceEl.options?.[serviceEl.selectedIndex]?.text || '';
       const service = normalizeServiceKey(rawService);
       const isSmallPackage = service === 'small-package' || /small-package|parcel/.test(service) || /small package|parcel/.test((rawService || '').toLowerCase());
-      const isFreightService = /full-truckload|less-than-truckload|local-hauling|hotshot-expedited|dry-van|hazmat|freight-coordination|ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service) || /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test((rawService || '').toLowerCase());
+      const isFreightService = isFreightServiceValue(rawService);
 
       if (smallPackageInfo) {
         smallPackageInfo.style.display = isSmallPackage ? 'block' : 'none';
@@ -251,6 +267,10 @@
 
       if (specialHandlingSection) {
         specialHandlingSection.style.display = !isSmallPackage && isFreightService ? 'block' : 'none';
+      }
+
+      if (freightDetailsSection) {
+        freightDetailsSection.style.display = isFreightService && !isSmallPackage ? 'block' : 'none';
       }
     }
 
@@ -512,6 +532,9 @@
       const btn  = document.getElementById('submitBtn');
       const note = document.getElementById('formNote');
 
+      const selectedService = (document.getElementById('f-service')?.value || '').toLowerCase();
+      const isFreight = isFreightServiceValue(selectedService);
+
       const fields = [
         { id: 'f-name',         label: 'Full Name' },
         { id: 'f-email',        label: 'Email Address' },
@@ -528,6 +551,11 @@
         { id: 'f-weight',       label: 'Cargo Weight' },
         { id: 'f-message',      label: 'Shipment Details' },
       ];
+
+      if (isFreight) {
+        fields.push({ id: 'f-commodity', label: 'Commodity / Cargo Type' });
+        fields.push({ id: 'f-dimensions', label: 'Dimensions (L x W x H)' });
+      }
 
       document.querySelectorAll('.field-error').forEach(el => el.remove());
       document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
@@ -593,6 +621,10 @@
           : document.getElementById('f-weight').value.trim(),
         pieces:         document.getElementById('f-pieces').value.trim() || '1',
         message:        document.getElementById('f-message').value.trim(),
+        commodity:      document.getElementById('f-commodity')?.value.trim() || '',
+        pallets:        document.getElementById('f-pallets')?.value.trim() || '',
+        dimensions:     document.getElementById('f-dimensions')?.value.trim() || '',
+        freightNotes:   document.getElementById('f-freight-notes')?.value.trim() || '',
         // Special handling & access requirements
         liftgate:       document.getElementById('f-liftgate')?.checked || false,
         appointment:    document.getElementById('f-appointment')?.checked || false,
@@ -638,6 +670,12 @@
       note.textContent = '';
 
       try {
+        const freightService = isFreightServiceValue(currentFormData.service);
+        if (freightService) {
+          showHeavyFreightPanel();
+          return false;
+        }
+
         const res = await fetch('/.netlify/functions/get-rates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -745,6 +783,15 @@
     function showHeavyFreightPanel() {
       const list = document.getElementById('quotesList');
       const w    = currentFormData ? currentFormData.weightDisplay || (currentFormData.weightRaw + ' ' + currentFormData.weightUnit) : '';
+      const commodity = currentFormData?.commodity || 'Not provided';
+      const pallets = currentFormData?.pallets || 'Not provided';
+      const dimensions = currentFormData?.dimensions || 'Not provided';
+      const notes = currentFormData?.freightNotes || currentFormData?.message || 'No extra notes';
+      const serviceLabel = currentFormData?.service || 'Freight';
+      const subject = encodeURIComponent(`${serviceLabel} Quote Request — ${currentFormData?.origin || 'Route'} to ${currentFormData?.destination || 'Destination'}`);
+      const body = encodeURIComponent(
+        `Pickup: ${currentFormData?.originFull || ''}\nDestination: ${currentFormData?.destFull || ''}\nWeight: ${w}\nService: ${serviceLabel}\nCommodity: ${commodity}\nPallets / Pieces: ${pallets}\nDimensions: ${dimensions}\nNotes: ${notes}`
+      );
       list.innerHTML = `
         <div style="background:#1e293b;border:2px solid #f59e0b;border-radius:14px;padding:28px 24px;">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
@@ -752,8 +799,8 @@
               <i class="fa-solid fa-truck-moving" style="font-size:1.5rem;color:#fff"></i>
             </div>
             <div>
-              <h3 style="color:#fbbf24;margin:0 0 4px;font-size:1.05rem">Heavy Freight — Custom Quote Required</h3>
-              <p style="color:#94a3b8;font-size:0.85rem;margin:0">Your shipment (${w}) exceeds the 150 lb parcel limit. This requires a freight-class quote.</p>
+              <h3 style="color:#fbbf24;margin:0 0 4px;font-size:1.05rem">Freight Quote Request Ready</h3>
+              <p style="color:#94a3b8;font-size:0.85rem;margin:0">Your route needs a custom freight review because it includes route, access, or weight details that require carrier coordination.</p>
             </div>
           </div>
           <div style="background:#0f172a;border-radius:10px;padding:16px 18px;margin-bottom:18px">
@@ -761,20 +808,24 @@
               <div style="color:#64748b">Pickup</div><div style="color:#f1f5f9;font-weight:600">${currentFormData?.originFull || '—'}</div>
               <div style="color:#64748b">Destination</div><div style="color:#f1f5f9;font-weight:600">${currentFormData?.destFull || '—'}</div>
               <div style="color:#64748b">Weight</div><div style="color:#f1f5f9;font-weight:600">${w}</div>
-              <div style="color:#64748b">Service</div><div style="color:#f1f5f9;font-weight:600">${currentFormData?.service || '—'}</div>
+              <div style="color:#64748b">Service</div><div style="color:#f1f5f9;font-weight:600">${serviceLabel}</div>
+              <div style="color:#64748b">Commodity</div><div style="color:#f1f5f9;font-weight:600">${commodity}</div>
+              <div style="color:#64748b">Pallets / Pieces</div><div style="color:#f1f5f9;font-weight:600">${pallets}</div>
+              <div style="color:#64748b">Dimensions</div><div style="color:#f1f5f9;font-weight:600">${dimensions}</div>
+              <div style="color:#64748b">Notes</div><div style="color:#f1f5f9;font-weight:600">${notes}</div>
             </div>
           </div>
-          <p style="color:#f1f5f9;font-size:0.9rem;font-weight:600;margin:0 0 6px">We'll give you an accurate freight rate within minutes:</p>
-          <p style="color:#94a3b8;font-size:0.82rem;margin:0 0 16px">Your shipment details above have been captured. Just call or email us and we'll quote you immediately.</p>
+          <p style="color:#f1f5f9;font-size:0.9rem;font-weight:600;margin:0 0 6px">We'll give you an accurate rate once the freight details are reviewed:</p>
+          <p style="color:#94a3b8;font-size:0.82rem;margin:0 0 16px">Your shipment details above have been captured. Please call or email us so CPARS can confirm access, equipment, and route requirements before booking.</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <a href="tel:+13522138976" class="btn-primary" style="padding:11px 22px;font-size:0.88rem">
               <i class="fa-solid fa-phone"></i> Call +1 (352) 213-8976
             </a>
-            <a href="mailto:cparstransportation@cparstransportationcom.com?subject=Heavy Freight Quote — ${encodeURIComponent(w)}&body=Pickup: ${encodeURIComponent(currentFormData?.originFull||'')}%0ADestination: ${encodeURIComponent(currentFormData?.destFull||'')}%0AWeight: ${encodeURIComponent(w)}%0AService: ${encodeURIComponent(currentFormData?.service||'')}" class="btn-outline-dark" style="padding:11px 22px;font-size:0.88rem">
+            <a href="mailto:cparstransportation@cparstransportationcom.com?subject=${subject}&body=${body}" class="btn-outline-dark" style="padding:11px 22px;font-size:0.88rem">
               <i class="fa-solid fa-envelope"></i> Email for Quote
             </a>
           </div>
-          <p style="color:#475569;font-size:0.78rem;margin:14px 0 0"><i class="fa-solid fa-circle-info"></i> Parcel carriers (UPS, FedEx, USPS) cap at 150 lbs per package. Shipments above this use LTL or FTL freight pricing which requires a custom rate.</p>
+          <p style="color:#475569;font-size:0.78rem;margin:14px 0 0"><i class="fa-solid fa-circle-info"></i> Freight pricing depends on route, dimensions, class, equipment, and dock access. This form captures the data needed for an accurate quote.</p>
         </div>
       `;
       window._currentRates = [];
