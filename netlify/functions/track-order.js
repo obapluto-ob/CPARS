@@ -21,9 +21,18 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Use list + find — avoids 30-60s search index delay
-    const intents = await stripe.paymentIntents.list({ limit: 100 });
-    const pi = intents.data.find(p => p.metadata?.cpars_ref === ref);
+    // Use Stripe search to find by cpars_ref across ALL intents (not just last 100)
+    let pi = null;
+    try {
+      const search = await stripe.paymentIntents.search({
+        query: `metadata["cpars_ref"]:"${ref}"`
+      });
+      pi = search.data[0] || null;
+    } catch {
+      // Fallback to list if search fails (e.g. index not ready)
+      const intents = await stripe.paymentIntents.list({ limit: 100 });
+      pi = intents.data.find(p => p.metadata?.cpars_ref === ref) || null;
+    }
 
     if (!pi) {
       return {

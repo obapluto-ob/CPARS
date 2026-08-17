@@ -41,6 +41,7 @@ exports.handler = async (event) => {
     }
 
     const results = [];
+    const carrierIds = await getCarrierIds(API_KEY);
 
     for (const pi of unbooked) {
       const meta    = pi.metadata || {};
@@ -96,7 +97,7 @@ exports.handler = async (event) => {
           method:  'POST',
           headers: { 'API-Key': API_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            carrier_ids:         await getCarrierIds(API_KEY),
+            carrier_ids:         carrierIds,
             from_country_code:   'US',
             from_postal_code:    originZip,
             from_city_locality:  'Houston',

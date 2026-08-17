@@ -4,7 +4,7 @@
  */
 const store = new Map();
 const WINDOW_MS = 60 * 1000;
-const MAX_HITS  = 10;
+const MAX_HITS  = 20;
 
 function getIP(event) {
   return (

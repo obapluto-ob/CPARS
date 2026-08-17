@@ -262,10 +262,6 @@
       try {
         const res  = await fetch('/.netlify/functions/config');
         const cfg  = await res.json();
-        emailjs.init(cfg.emailjsPublicKey);
-        EMAILJS_SERVICE    = cfg.emailjsServiceId;
-        EMAILJS_CLIENT_TPL = cfg.emailjsClientTemplate;
-        EMAILJS_OWNER_TPL  = cfg.emailjsOwnerTemplate;
         // Load Stripe.js dynamically
         await new Promise((resolve, reject) => {
           if (window.Stripe) { stripe = Stripe(cfg.stripeKey); return resolve(); }
@@ -275,7 +271,15 @@
           s.onerror = reject;
           document.head.appendChild(s);
         });
-        // Address autocomplete uses free OpenStreetMap — no key needed
+        // EmailJS keys loaded server-side only — init with public key via separate call
+        const ejsRes = await fetch('/.netlify/functions/emailjs-config');
+        if (ejsRes.ok) {
+          const ejs = await ejsRes.json();
+          if (ejs.publicKey) emailjs.init(ejs.publicKey);
+          EMAILJS_SERVICE    = ejs.serviceId    || '';
+          EMAILJS_CLIENT_TPL = ejs.clientTemplate || '';
+          EMAILJS_OWNER_TPL  = ejs.ownerTemplate  || '';
+        }
       } catch(e) {
         console.error('Config load failed', e);
       }
@@ -286,11 +290,6 @@
        FREE ADDRESS AUTOCOMPLETE
        Uses OpenStreetMap Nominatim — no API key, no cost
     ══════════════════════════════ */
-    function initGooglePlaces() {
-      // Called from config loader — wire up free autocomplete instead
-      setupFreeAutocomplete('f-origin-street', 'f-origin-city', 'f-origin', 'origin-status', 'origin-hint');
-      setupFreeAutocomplete('f-dest-street',   'f-dest-city',   'f-destination', 'dest-status', 'dest-hint');
-    }
     // initAddressAutocomplete is called after sections finish loading (see Promise.all below)
 
     const _acTimers = {};
@@ -608,27 +607,25 @@
       document.getElementById('quotesPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    /* Carrier logo map — real brand logos */
-    const CARRIER_LOGOS = {
-      ups:            { src: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/UPS_Logo_Shield_2017.svg',           bg: '#301506' },
-      fedex_walleted: { src: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg', bg: '#4d148c' },
-      stamps_com:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
-      usps:           { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
-      globalpost:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
-      dhl_express:    { src: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/DHL_Logo.svg',                      bg: '#FFCC00', textColor: '#D40511' },
-      ontrac:         { src: '', bg: '#e65c00' },
+    /* Carrier photo map — real truck photos by service type */
+    const CARRIER_PHOTOS = {
+      ups:            { photo: 'about-truck-2.jpg',  accent: '#f59e0b', name: 'UPS' },
+      fedex_walleted: { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed', name: 'FedEx' },
+      fedex:          { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed', name: 'FedEx' },
+      stamps_com:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb', name: 'USPS' },
+      usps:           { photo: 'fleet-truck-3.jpg',  accent: '#2563eb', name: 'USPS' },
+      globalpost:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb', name: 'GlobalPost' },
+      dhl_express:    { photo: 'about-truck-1.jpg',  accent: '#dc2626', name: 'DHL Express' },
+      dhl:            { photo: 'about-truck-1.jpg',  accent: '#dc2626', name: 'DHL' },
+      ontrac:         { photo: 'about-truck-3.jpg',  accent: '#16a34a', name: 'OnTrac' },
     };
 
-    /* Service → truck image map */
-    const SERVICE_TRUCK = {
-      'Full Truckload (FTL)':       'fleet-truck-1.jpg',
-      'Less Than Truckload (LTL)':  'fleet-truck-2.jpg',
-      'Hotshot & Expedited':        'fleet-truck-3.jpg',
-      'Dry Van Transport':          'fleet-truck-1.jpg',
-      'Hazmat Transport':           'hazmat-truck.jpg',
-      'Local & Regional Hauling':   'fleet-truck-2.jpg',
-      'Freight Coordination':       'fleet-truck-3.jpg',
-    };
+    function getCarrierPhoto(carrierCode) {
+      const key = (carrierCode || '').toLowerCase();
+      return CARRIER_PHOTOS[key] ||
+        CARRIER_PHOTOS[Object.keys(CARRIER_PHOTOS).find(k => key.includes(k)) || ''] ||
+        { photo: 'fleet-truck-2.jpg', accent: '#1a56db', name: carrierCode };
+    }
 
     function setStep(n) {
       for (let i = 1; i <= 4; i++) {
@@ -646,9 +643,6 @@
       const list   = document.getElementById('quotesList');
       const weight = parseFloat(currentFormData.weight) || 0;
 
-      // Find max price for savings callout
-      const maxPrice = Math.max(...rates.map(r => r.cpars_price));
-
       const weightAlert = weight > 150
         ? `<div class="weight-alert"><i class="fa-solid fa-triangle-exclamation"></i><span>Your cargo weight (${weight} lbs) exceeds parcel carrier limits (150 lbs max per package). Showing estimated freight rates — a CPARS team member will confirm the final price within the hour.</span></div>`
         : '';
@@ -657,57 +651,45 @@
         const tags      = r.tags || [];
         const isBest    = tags.includes('best_value') || tags.includes('cheapest');
         const isFastest = tags.includes('fastest') && !isBest;
-        const badge     = isBest    ? '<span class="quote-badge badge-best"><i class="fa-solid fa-star"></i> Best Value</span>'
-                        : isFastest ? '<span class="quote-badge badge-fast"><i class="fa-solid fa-bolt"></i> Fastest</span>' : '';
 
-        const savings = maxPrice - r.cpars_price;
-        const savingsHtml = savings > 0.5
-          ? `<span class="quote-savings">Save $${savings.toFixed(2)} vs most expensive</span>` : '';
+        const badge = isBest
+          ? `<div class="qcard-badge badge-best"><i class="fa-solid fa-star"></i> Best Value</div>`
+          : isFastest
+          ? `<div class="qcard-badge badge-fast"><i class="fa-solid fa-bolt"></i> Fastest</div>`
+          : '';
 
-        // Estimated delivery date
+        const cp    = getCarrierPhoto(r.carrier_code);
+        const margin = ((r.cpars_price - r.carrier_price) / r.carrier_price * 100).toFixed(0);
+
         const deliveryDate = r.delivery_days
           ? (() => { const d = new Date(); d.setDate(d.getDate() + parseInt(r.delivery_days) + 1); return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); })()
           : null;
 
-        const logo    = CARRIER_LOGOS[r.carrier_code];
-        const truckImg = SERVICE_TRUCK[currentFormData?.service] || 'fleet-truck-1.jpg';
-        const logoHtml = logo && logo.src
-          ? `<div class="quote-logo-box" style="background:${logo.bg}">
-               <img src="${logo.src}" alt="${r.carrier}"
-                 onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-truck\' style=\'font-size:1.4rem;color:#fff\'></i>'"/>
-             </div>`
-          : `<div class="quote-logo-box" style="background:${logo?.bg || '#1a56db'}">
-               <i class="fa-solid fa-truck" style="font-size:1.4rem;color:#fff"></i>
-             </div>`;
-
-        const truckHtml = `<div class="quote-truck-img"><img src="${truckImg}" alt="truck" onerror="this.style.display='none'"/></div>`;
-
         const deliveryLabel = r.delivery_label || (r.delivery_days ? `${r.delivery_days} business day(s)` : 'Contact for ETA');
-        const deliveryDateHtml = deliveryDate ? `<span class="qtag qtag-date"><i class="fa-solid fa-calendar-check"></i> Est. ${deliveryDate}</span>` : '';
-
-        const tagHtml = [
-          `<span class="qtag qtag-delivery"><i class="fa-solid fa-clock"></i> ${deliveryLabel}</span>`,
-          deliveryDateHtml,
-          r.guaranteed ? `<span class="qtag qtag-guaranteed"><i class="fa-solid fa-shield-halved"></i> Guaranteed</span>` : '',
-          r.trackable  ? `<span class="qtag qtag-trackable"><i class="fa-solid fa-location-dot"></i> Trackable</span>` : '',
-          r.estimated  ? `<span class="qtag qtag-estimated"><i class="fa-solid fa-circle-info"></i> Estimated</span>` : ''
-        ].filter(Boolean).join('');
 
         return `
-          <div class="quote-card ${isBest ? 'quote-best' : ''}" onclick="selectQuote(${i})" id="quote-${i}">
+          <div class="qcard ${isBest ? 'qcard-top' : ''}" id="quote-${i}" onclick="selectQuote(${i})">
             ${badge}
-            <div class="quote-truck-wrap">${truckHtml}</div>
-            <div class="quote-logo-box">${logoHtml}</div>
-            <div class="quote-carrier-info">
-              <strong>${r.carrier}</strong>
-              <span>${r.service}</span>
+            <div class="qcard-photo" style="--accent:${cp.accent}">
+              <img src="${cp.photo}" alt="${r.carrier}" loading="lazy"/>
+              <div class="qcard-photo-overlay">
+                <span class="qcard-carrier-name">${r.carrier}</span>
+              </div>
             </div>
-            <div class="quote-price-col">
-              <div class="quote-price">$${r.cpars_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-              ${savingsHtml}
+            <div class="qcard-body">
+              <div class="qcard-service">${r.service}</div>
+              <div class="qcard-meta">
+                <span><i class="fa-solid fa-clock"></i> ${deliveryLabel}</span>
+                ${deliveryDate ? `<span><i class="fa-solid fa-calendar-check"></i> Est. ${deliveryDate}</span>` : ''}
+                ${r.guaranteed ? `<span class="qcard-tag-green"><i class="fa-solid fa-shield-halved"></i> Guaranteed</span>` : ''}
+                ${r.trackable  ? `<span><i class="fa-solid fa-location-dot"></i> Trackable</span>` : ''}
+              </div>
+              <div class="qcard-price-row">
+                <div class="qcard-price">$${r.cpars_price.toLocaleString('en-US',{minimumFractionDigits:2})}</div>
+                <div class="qcard-price-note">Includes CPARS handling &amp; coordination</div>
+              </div>
+              <button class="qcard-select-btn">Select This Rate <i class="fa-solid fa-arrow-right"></i></button>
             </div>
-            <div class="quote-tags">${tagHtml}</div>
-            <button class="btn-primary quote-select-btn">Select This Rate <i class="fa-solid fa-arrow-right"></i></button>
           </div>
         `;
       }).join('');
@@ -721,8 +703,8 @@
 
     window.selectQuote = (index) => {
       selectedRate = window._currentRates[index];
-      document.querySelectorAll('.quote-card').forEach(c => c.classList.remove('quote-selected'));
-      document.getElementById(`quote-${index}`).classList.add('quote-selected');
+      document.querySelectorAll('.qcard').forEach(c => c.classList.remove('qcard-selected'));
+      document.getElementById(`quote-${index}`).classList.add('qcard-selected');
       setTimeout(() => showPaymentPanel(), 300);
     };
 
@@ -1018,7 +1000,7 @@
     window.filterQuotes = (type, btn) => {
       document.querySelectorAll('.qfilter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const cards = document.querySelectorAll('.quote-card');
+      const cards = document.querySelectorAll('.qcard');
       const rates = window._currentRates || [];
       cards.forEach((card, i) => {
         const r = rates[i];

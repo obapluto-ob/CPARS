@@ -20,6 +20,9 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'stripe_id required' }) };
   }
 
+  const VALID_REASONS = ['duplicate', 'fraudulent', 'requested_by_customer'];
+  const safeReason = VALID_REASONS.includes(reason) ? reason : 'requested_by_customer';
+
   try {
     // Get the charge from the payment intent
     const pi = await stripe.paymentIntents.retrieve(stripe_id, { expand: ['latest_charge'] });
@@ -31,7 +34,7 @@ exports.handler = async (event) => {
 
     const refundParams = {
       charge: chargeId,
-      reason: reason || 'requested_by_customer'
+      reason: safeReason
     };
     if (amount_cents) refundParams.amount = amount_cents;
 

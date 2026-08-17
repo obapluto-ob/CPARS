@@ -29,6 +29,20 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 
+  if (!payment_intent_id) {
+    return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'payment_intent_id required' }) };
+  }
+
+  // Verify the PaymentIntent actually succeeded before booking any label
+  try {
+    const pi = await stripe.paymentIntents.retrieve(payment_intent_id);
+    if (pi.status !== 'succeeded') {
+      return { statusCode: 403, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Payment not confirmed' }) };
+    }
+  } catch (e) {
+    return { statusCode: 403, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Could not verify payment' }) };
+  }
+
   const API_KEY = process.env.SHIPSTATION_API_KEY;
 
   try {

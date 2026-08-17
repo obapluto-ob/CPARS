@@ -48,6 +48,7 @@ exports.handler = async (event) => {
   const API_KEY = process.env.SHIPSTATION_API_KEY;
 
   try {
+    const carrierIds = await getCarrierIds(API_KEY);
     const res = await fetch('https://api.shipengine.com/v1/rates/estimate', {
       method: 'POST',
       headers: {
@@ -55,7 +56,7 @@ exports.handler = async (event) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        carrier_ids:       await getCarrierIds(API_KEY),
+        carrier_ids:       carrierIds,
         from_country_code: 'US',
         from_postal_code:  origin_zip,
         from_city_locality: origin_city   || 'Houston',

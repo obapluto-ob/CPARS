@@ -19,7 +19,7 @@ exports.handler = async (event) => {
 
   const { amount, rate_id, customer_email, ref, carrier, service, carrier_code, service_code, weight_declared, weight_unit, weight_buffered_lbs, name, phone, origin, destination, origin_zip, destination_zip } = JSON.parse(event.body || '{}');
 
-  if (!amount || !customer_email || !ref) {
+  if (!amount || parseFloat(amount) < 1 || !customer_email || !ref) {
     return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 

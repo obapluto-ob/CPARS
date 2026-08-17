@@ -1,24 +1,24 @@
-/* ── Carrier logo map (admin) ── */
-const ADMIN_CARRIER_LOGOS = {
-  ups:            { src: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/UPS_Logo_Shield_2017.svg',           bg: '#301506' },
-  fedex_walleted: { src: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg', bg: '#4d148c' },
-  fedex:          { src: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg', bg: '#4d148c' },
-  stamps_com:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
-  usps:           { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
-  globalpost:     { src: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/USPS_eagle_symbol_sm2017.svg',      bg: '#004b87' },
-  dhl_express:    { src: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/DHL_Logo.svg',                      bg: '#FFCC00' },
-  dhl:            { src: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/DHL_Logo.svg',                      bg: '#FFCC00' },
+/* ── Carrier photo map (admin) ── */
+const ADMIN_CARRIER_PHOTOS = {
+  ups:            { photo: 'about-truck-2.jpg',  accent: '#f59e0b' },
+  fedex_walleted: { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed' },
+  fedex:          { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed' },
+  stamps_com:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb' },
+  usps:           { photo: 'fleet-truck-3.jpg',  accent: '#2563eb' },
+  globalpost:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb' },
+  dhl_express:    { photo: 'about-truck-1.jpg',  accent: '#dc2626' },
+  dhl:            { photo: 'about-truck-1.jpg',  accent: '#dc2626' },
+  ontrac:         { photo: 'about-truck-3.jpg',  accent: '#16a34a' },
 };
 
 function carrierLogoHtml(carrierCode, carrierName) {
   const key  = (carrierCode || carrierName || '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
-  const logo = ADMIN_CARRIER_LOGOS[key] || ADMIN_CARRIER_LOGOS[Object.keys(ADMIN_CARRIER_LOGOS).find(k => key.includes(k)) || ''];
-  if (logo && logo.src) {
-    return '<div class="admin-carrier-logo" style="background:' + logo.bg + '">'
-      + '<img src="' + logo.src + '" alt="' + (carrierName||'') + '" onerror="this.style.display=\'none\'"/>'
-      + '</div>';
-  }
-  return '<div class="admin-carrier-logo" style="background:#1e3a8a"><i class="fa-solid fa-truck"></i></div>';
+  const cp   = ADMIN_CARRIER_PHOTOS[key] ||
+    ADMIN_CARRIER_PHOTOS[Object.keys(ADMIN_CARRIER_PHOTOS).find(k => key.includes(k)) || ''] ||
+    { photo: 'fleet-truck-2.jpg', accent: '#1a56db' };
+  return `<div class="admin-carrier-logo" style="background:#0f172a;border-bottom:3px solid ${cp.accent};overflow:hidden;">`
+    + `<img src="/${cp.photo}" alt="${carrierName||''}" style="width:100%;height:100%;object-fit:cover;object-position:center 60%;filter:brightness(0.85)" onerror="this.style.display='none'"/>`
+    + `</div>`;
 }
 
 const ADMIN_USER   = 'cpars_admin';
