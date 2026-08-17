@@ -1,24 +1,23 @@
-/* ── Carrier photo map (admin) ── */
-const ADMIN_CARRIER_PHOTOS = {
-  ups:            { photo: 'about-truck-2.jpg',  accent: '#f59e0b' },
-  fedex_walleted: { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed' },
-  fedex:          { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed' },
-  stamps_com:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb' },
-  usps:           { photo: 'fleet-truck-3.jpg',  accent: '#2563eb' },
-  globalpost:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb' },
-  dhl_express:    { photo: 'about-truck-1.jpg',  accent: '#dc2626' },
-  dhl:            { photo: 'about-truck-1.jpg',  accent: '#dc2626' },
-  ontrac:         { photo: 'about-truck-3.jpg',  accent: '#16a34a' },
+/* ── Carrier brand map (admin) ── */
+const ADMIN_CARRIER_BRANDS = {
+  ups:            { short: 'UPS', label: 'UPS', bg: '#f59e0b', accent: '#f59e0b' },
+  fedex_walleted: { short: 'FX', label: 'FedEx', bg: '#7c3aed', accent: '#7c3aed' },
+  fedex:          { short: 'FX', label: 'FedEx', bg: '#7c3aed', accent: '#7c3aed' },
+  stamps_com:     { short: 'SC', label: 'Stamps.com', bg: '#2563eb', accent: '#2563eb' },
+  usps:           { short: 'USPS', label: 'USPS', bg: '#2563eb', accent: '#2563eb' },
+  globalpost:     { short: 'GP', label: 'GlobalPost', bg: '#0ea5e9', accent: '#0ea5e9' },
+  dhl_express:    { short: 'DHL', label: 'DHL Express', bg: '#dc2626', accent: '#dc2626' },
+  dhl:            { short: 'DHL', label: 'DHL', bg: '#dc2626', accent: '#dc2626' },
+  ontrac:         { short: 'OT', label: 'OnTrac', bg: '#16a34a', accent: '#16a34a' },
 };
 
 function carrierLogoHtml(carrierCode, carrierName) {
-  const key  = (carrierCode || carrierName || '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
-  const cp   = ADMIN_CARRIER_PHOTOS[key] ||
-    ADMIN_CARRIER_PHOTOS[Object.keys(ADMIN_CARRIER_PHOTOS).find(k => key.includes(k)) || ''] ||
-    { photo: 'fleet-truck-2.jpg', accent: '#1a56db' };
-  return `<div class="admin-carrier-logo" style="background:#0f172a;border-bottom:3px solid ${cp.accent};overflow:hidden;">`
-    + `<img src="/${cp.photo}" alt="${carrierName||''}" style="width:100%;height:100%;object-fit:cover;object-position:center 60%;filter:brightness(0.85)" onerror="this.style.display='none'"/>`
-    + `</div>`;
+  const key = (carrierCode || carrierName || '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  const cp = ADMIN_CARRIER_BRANDS[key] ||
+    ADMIN_CARRIER_BRANDS[Object.keys(ADMIN_CARRIER_BRANDS).find(k => key.includes(k)) || ''] ||
+    { short: 'CP', label: carrierName || 'Carrier', bg: '#1a56db', accent: '#1a56db' };
+
+  return `<div class="admin-carrier-logo" style="background:${cp.bg};border-bottom:3px solid ${cp.accent};overflow:hidden;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;letter-spacing:0.04em;">${cp.short}</div>`;
 }
 
 const ADMIN_USER   = 'cpars_admin';

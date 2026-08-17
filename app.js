@@ -387,8 +387,11 @@
       else if (v.length >= 3) v = '(' + v.slice(0,3) + ') ' + v.slice(3);
       input.value = v;
       const st = document.getElementById('phone-status');
-      if (st) st.innerHTML = v.replace(/\D/g,'').length === 10
-        ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
+      if (st) {
+        st.innerHTML = v.replace(/\D/g,'').length === 10
+          ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
+          : '<i class="fa-solid fa-circle-xmark" style="color:#f59e0b"></i>';
+      }
     };
 
     /* ══════════════════════════════
@@ -402,6 +405,7 @@
         ? valid
           ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>'
           : '<i class="fa-solid fa-circle-xmark" style="color:#dc2626"></i>'
+        : '';
     };
 
     // Payment recovery — handle ?recover=REF&email=EMAIL&amount=AMOUNT in URL
@@ -649,24 +653,24 @@
       document.getElementById('quotesPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    /* Carrier photo map — real truck photos by service type */
-    const CARRIER_PHOTOS = {
-      ups:            { photo: 'about-truck-2.jpg',  accent: '#f59e0b', name: 'UPS' },
-      fedex_walleted: { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed', name: 'FedEx' },
-      fedex:          { photo: 'fleet-truck-1.jpg',  accent: '#7c3aed', name: 'FedEx' },
-      stamps_com:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb', name: 'USPS' },
-      usps:           { photo: 'fleet-truck-3.jpg',  accent: '#2563eb', name: 'USPS' },
-      globalpost:     { photo: 'fleet-truck-3.jpg',  accent: '#2563eb', name: 'GlobalPost' },
-      dhl_express:    { photo: 'about-truck-1.jpg',  accent: '#dc2626', name: 'DHL Express' },
-      dhl:            { photo: 'about-truck-1.jpg',  accent: '#dc2626', name: 'DHL' },
-      ontrac:         { photo: 'about-truck-3.jpg',  accent: '#16a34a', name: 'OnTrac' },
+    /* Carrier brand style map — stable, branded, and never broken */
+    const CARRIER_BRANDS = {
+      ups:            { short: 'UPS', label: 'UPS', accent: '#f59e0b', bg: '#f59e0b' },
+      fedex_walleted: { short: 'FX', label: 'FedEx', accent: '#7c3aed', bg: '#7c3aed' },
+      fedex:          { short: 'FX', label: 'FedEx', accent: '#7c3aed', bg: '#7c3aed' },
+      stamps_com:     { short: 'SC', label: 'Stamps.com', accent: '#2563eb', bg: '#2563eb' },
+      usps:           { short: 'USPS', label: 'USPS', accent: '#2563eb', bg: '#2563eb' },
+      globalpost:     { short: 'GP', label: 'GlobalPost', accent: '#0ea5e9', bg: '#0ea5e9' },
+      dhl_express:    { short: 'DHL', label: 'DHL Express', accent: '#dc2626', bg: '#dc2626' },
+      dhl:            { short: 'DHL', label: 'DHL', accent: '#dc2626', bg: '#dc2626' },
+      ontrac:         { short: 'OT', label: 'OnTrac', accent: '#16a34a', bg: '#16a34a' },
     };
 
     function getCarrierPhoto(carrierCode) {
       const key = (carrierCode || '').toLowerCase();
-      return CARRIER_PHOTOS[key] ||
-        CARRIER_PHOTOS[Object.keys(CARRIER_PHOTOS).find(k => key.includes(k)) || ''] ||
-        { photo: 'fleet-truck-2.jpg', accent: '#1a56db', name: carrierCode };
+      return CARRIER_BRANDS[key] ||
+        CARRIER_BRANDS[Object.keys(CARRIER_BRANDS).find(k => key.includes(k)) || ''] ||
+        { short: 'CP', label: carrierCode || 'Carrier', accent: '#1a56db', bg: '#1a56db' };
     }
 
     function setStep(n) {
@@ -696,7 +700,7 @@
           ? `<div class="qcard-badge badge-fast"><i class="fa-solid fa-bolt"></i> Fastest</div>`
           : '';
 
-        const cp    = getCarrierPhoto(r.carrier_code);
+        const cp    = getCarrierPhoto(r.carrier_code || r.carrier);
         const margin = ((r.cpars_price - r.carrier_price) / r.carrier_price * 100).toFixed(0);
 
         const deliveryDate = r.delivery_days
@@ -708,10 +712,10 @@
         return `
           <div class="qcard ${isBest ? 'qcard-top' : ''}" id="quote-${i}" onclick="selectQuote(${i})">
             ${badge}
-            <div class="qcard-photo" style="--accent:${cp.accent}">
-              <img src="${cp.photo}" alt="${r.carrier}" loading="lazy"/>
+            <div class="qcard-photo" style="--accent:${cp.accent}; background:${cp.bg};">
+              <div class="carrier-logo-badge" style="background:${cp.bg}; border-color:${cp.accent};">${cp.short}</div>
               <div class="qcard-photo-overlay">
-                <span class="qcard-carrier-name">${r.carrier}</span>
+                <span class="qcard-carrier-name">${cp.label}</span>
               </div>
             </div>
             <div class="qcard-body">
@@ -726,6 +730,7 @@
                 <div class="qcard-price">$${r.cpars_price.toLocaleString('en-US',{minimumFractionDigits:2})}</div>
                 <div class="qcard-price-note">Includes CPARS handling &amp; coordination</div>
               </div>
+              <div class="qcard-profit-line">CPARS margin: ${margin}%</div>
               <button class="qcard-select-btn">Select This Rate <i class="fa-solid fa-arrow-right"></i></button>
             </div>
           </div>
