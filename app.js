@@ -666,7 +666,16 @@
       const serviceRaw = formData.service || '';
       const service = normalizeServiceKey(serviceRaw);
       const isSmallPackage = service === 'small-package' || /small-package|parcel/.test(service) || /small package|parcel/.test(serviceRaw.toLowerCase());
-      const isFreightService = /full-truckload|less-than-truckload|local-hauling|hotshot-expedited|dry-van|hazmat|freight-coordination|ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(service) || /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(serviceRaw.toLowerCase());
+      const freightServices = [
+        'full-truckload',
+        'less-than-truckload',
+        'local-hauling',
+        'hotshot-expedited',
+        'dry-van',
+        'hazmat',
+        'freight-coordination'
+      ];
+      const isFreightService = freightServices.includes(service) || freightServices.some(s => service.includes(s)) || /ftl|ltl|hazmat|hotshot|expedited|freight|local/.test(serviceRaw.toLowerCase());
 
       if (!formData.originApt || !formData.destApt) {
         warnings.push('Apartment / suite is required for both pickup and destination.');
@@ -674,10 +683,10 @@
       if (!formData.origin || !formData.destination) {
         warnings.push('ZIP code is required for pickup and destination.');
       }
-      if (weight > 150) {
+      if (weight > 150 && isFreightService && !isSmallPackage) {
         warnings.push('Heavy freight over 150 lb requires a custom freight quote.');
       }
-      // Only show special handling warning for freight services, not small packages
+      // Only show special handling warning for actual freight services, not small packages
       if (isFreightService && !isSmallPackage) {
         warnings.push('This route may need a lift-gate, appointment, or access review before booking.');
       }
