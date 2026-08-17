@@ -800,7 +800,8 @@
               origin:              currentFormData.originFull,
               destination:         currentFormData.destFull,
               origin_zip:          currentFormData.origin,
-              destination_zip:     currentFormData.destination
+              destination_zip:     currentFormData.destination,
+              carrier_price:       selectedRate.carrier_price || ''
             })
           });
           intentData = await intentRes.json();

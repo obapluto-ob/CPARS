@@ -151,6 +151,9 @@ async function loadActivity() {
     if (document.getElementById('statBooked')) {
       document.getElementById('statBooked').textContent = data.booked || 0;
     }
+    if (document.getElementById('statMargin')) {
+      document.getElementById('statMargin').textContent = '$' + (data.totalMargin || 0).toFixed(2);
+    }
 
     allShipments = data.shipments;
     window._stripeShipments = data.shipments;
@@ -798,7 +801,8 @@ function openDrawer(index) {
       <div class="drawer-row"><span>Carrier</span><strong>${s.carrier}</strong></div>
       <div class="drawer-row"><span>Service</span><strong>${s.service}</strong></div>
       <div class="drawer-row"><span>Weight</span><strong>${s.weight}</strong></div>
-      <div class="drawer-row"><span>Amount</span><strong style="color:#10b981;font-size:1.1rem">$${s.amount.toFixed(2)}</strong></div>
+      <div class="drawer-row"><span>Amount Paid</span><strong style="color:#10b981;font-size:1.1rem">$${s.amount.toFixed(2)}</strong></div>
+      ${s.carrier_price ? `<div class="drawer-row"><span>Carrier Cost</span><strong style="color:#94a3b8">$${s.carrier_price.toFixed(2)}</strong></div><div class="drawer-row"><span>CPARS Earnings</span><strong style="color:#f59e0b;font-size:1rem">$${(s.amount - s.carrier_price).toFixed(2)}</strong></div>` : ""}
     </div>
     ${s.tracking_number ? `
     <div class="drawer-section">

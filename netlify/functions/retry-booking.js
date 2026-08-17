@@ -59,7 +59,6 @@ exports.handler = async (event) => {
         to_city_locality:    dest_city  || '',
         to_state_province:   dest_state || '',
         weight:     { value: weightNum, unit: 'pound' },
-        dimensions: { unit: 'inch', length: 20, width: 15, height: 10 }
       })
     });
 

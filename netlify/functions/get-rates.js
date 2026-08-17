@@ -65,8 +65,7 @@ exports.handler = async (event) => {
         to_postal_code:    destination_zip,
         to_city_locality:  dest_city   || '',
         to_state_province: dest_state  || '',
-        weight: { value: weightNum, unit: 'pound' },
-        dimensions: { unit: 'inch', length: 20, width: 15, height: 10 }
+        weight: { value: weightNum, unit: 'pound' }
       })
     });
 

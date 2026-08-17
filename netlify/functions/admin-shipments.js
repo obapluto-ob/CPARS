@@ -56,6 +56,9 @@ exports.handler = async (event) => {
         ? `${meta.weight_declared} ${meta.weight_unit || 'lbs'}`
         : (meta.weight || '—');
 
+      const carrierPrice = meta.carrier_price ? parseFloat(meta.carrier_price) : null;
+      const cparsMargin  = carrierPrice ? parseFloat(((pi.amount / 100) - carrierPrice).toFixed(2)) : null;
+
       return {
         ref:         meta.cpars_ref || '—',
         name, email, phone, origin, destination,
@@ -83,12 +86,15 @@ exports.handler = async (event) => {
         origin_zip,
         destination_zip,
         label_url:   meta.label_url || null,
+        carrier_price: carrierPrice,
+        cpars_margin:  cparsMargin,
       };
     });
 
     // Stats
     const paid      = shipments.filter(s => s.paid);
     const revenue   = paid.reduce((sum, s) => sum + s.amount, 0);
+    const totalMargin = paid.reduce((sum, s) => sum + (s.cpars_margin || 0), 0);
     const pending   = shipments.filter(s => s.status === 'requires_payment_method' || s.status === 'requires_action').length;
     const failed    = shipments.filter(s => s.status === 'canceled' || s.status === 'payment_failed').length;
     const booked    = shipments.filter(s => s.booking_status === 'booked' || s.booking_status === 'delivered').length;
@@ -96,7 +102,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ shipments, revenue, total: shipments.length, paid: paid.length, pending, failed, booked })
+      body: JSON.stringify({ shipments, revenue, totalMargin, total: shipments.length, paid: paid.length, pending, failed, booked })
     };
 
   } catch (err) {
