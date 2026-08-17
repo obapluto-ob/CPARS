@@ -1345,40 +1345,51 @@
 .qcard-top:hover { border-color: #059669; box-shadow: 0 8px 32px rgba(16,185,129,0.22); }
 .qcard-selected { border-color: #1a56db !important; box-shadow: 0 0 0 3px rgba(26,86,219,0.18) !important; }
 
+/* Carrier photo area with branded color */
 .qcard-photo {
   position: relative;
   height: 160px;
   overflow: hidden;
-  background: #0f172a;
+  background: var(--bg, #0f172a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
-.qcard-photo img {
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: center 60%;
-  transition: transform 0.4s ease;
-  filter: brightness(0.82);
-}
-.qcard:hover .qcard-photo img { transform: scale(1.04); filter: brightness(0.9); }
-.qcard-photo::after {
-  content: '';
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--accent, #1a56db);
-}
-.qcard-overlay {
-  position: absolute; inset: 0;
-  display: flex; align-items: flex-end;
-  padding: 14px 16px;
-  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 60%);
-}
-.qcard-carrier-pill {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,0.25);
+/* Carrier logo badge */
+.carrier-logo-badge {
+  font-size: 3rem;
+  font-weight: 800;
   color: #fff;
-  font-size: 0.82rem; font-weight: 700;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  padding: 4px 12px; border-radius: 20px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  letter-spacing: -0.03em;
+  border: 3px solid currentColor;
+  border-radius: 14px;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  transition: transform 0.3s ease;
 }
+.qcard:hover .carrier-logo-badge { transform: scale(1.08); }
+
+/* Overlay with carrier name */
+.qcard-photo-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 70%);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+}
+.qcard-carrier-name {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .qcard-badge {
   position: absolute; top: 12px; right: 12px; z-index: 2;
   font-size: 0.75rem; font-weight: 700;
@@ -1391,94 +1402,95 @@
 .qcard-body {
   padding: 16px 18px 18px;
   display: flex; flex-direction: column; gap: 10px;
+  flex: 1;
 }
-.qcard-service { font-size: 1rem; font-weight: 700; color: #1e293b; }
-.qcard-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.qtag {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 0.75rem; font-weight: 500;
-  padding: 3px 10px; border-radius: 20px;
-  background: #f1f5f9; color: #475569;
+.qcard-service { 
+  font-size: 1rem; font-weight: 700; color: #1e293b;
+  line-height: 1.4;
 }
-.qtag-green { background: #dcfce7; color: #166534; }
+
+/* Delivery info, guarantees, trackable */
+.qcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+.qcard-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qcard-tag-green {
+  background: #dcfce7;
+  color: #166534;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .qcard-price-row {
-  display: flex; align-items: center;
+  display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  margin-top: 4px; gap: 12px;
+  margin-top: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.qcard-price { font-size: 1.6rem; font-weight: 800; color: #1a56db; line-height: 1; }
-.qcard-price-note { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; }
-.qcard-btn {
-  flex-shrink: 0;
-  background: #1a56db; color: #fff;
-  border: none; border-radius: 10px;
+.qcard-price {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1a56db;
+  line-height: 1;
+}
+.qcard-price-note {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.qcard-select-btn {
+  align-self: flex-end;
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
   padding: 10px 18px;
-  font-size: 0.85rem; font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   transition: background 0.2s, transform 0.15s;
   white-space: nowrap;
+  margin-top: auto;
 }
-.qcard-btn:hover { background: #1e40af; transform: translateX(2px); }
-.qcard-top .qcard-btn { background: #10b981; }
-.qcard-top .qcard-btn:hover { background: #059669; }
+.qcard-select-btn:hover {
+  background: #1e40af;
+  transform: translateX(2px);
+}
+.qcard-top .qcard-select-btn {
+  background: #10b981;
+}
+.qcard-top .qcard-select-btn:hover {
+  background: #059669;
+}
 
+@media (max-width: 768px) {
+  .carrier-logo-badge { font-size: 2.2rem; min-width: 80px; padding: 12px 16px; }
+}
 @media (max-width: 480px) {
-  .qcard-photo { height: 120px; }
-  .qcard-price { font-size: 1.3rem; }
+  .qcard-photo { height: 120px; padding: 16px; }
+  .carrier-logo-badge { font-size: 1.8rem; padding: 10px 14px; min-width: 70px; }
+  .qcard-price { font-size: 1.4rem; }
   .qcard-price-row { flex-direction: column; align-items: flex-start; }
-  .qcard-btn { width: 100%; justify-content: center; }
+  .qcard-select-btn { width: 100%; justify-content: center; }
 }
 
-/* ═══════════════════════════════════════
-   PHOTO-BASED QUOTE CARDS (qcard)
-═══════════════════════════════════════ */
-.qcard {
-  position: relative;
-  background: #fff;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
-  display: flex;
-  flex-direction: column;
-}
-.qcard:hover { border-color: #1a56db; box-shadow: 0 8px 32px rgba(26,86,219,0.13); transform: translateY(-2px); }
-.qcard-top { border-color: #10b981; box-shadow: 0 4px 20px rgba(16,185,129,0.15); }
-.qcard-top:hover { border-color: #059669; box-shadow: 0 8px 32px rgba(16,185,129,0.22); }
-.qcard-selected { border-color: #1a56db !important; box-shadow: 0 0 0 3px rgba(26,86,219,0.18) !important; }
-
-.qcard-photo { position: relative; height: 160px; overflow: hidden; background: #0f172a; }
-.qcard-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 60%; transition: transform 0.4s ease; filter: brightness(0.82); }
-.qcard:hover .qcard-photo img { transform: scale(1.04); filter: brightness(0.9); }
-.qcard-photo::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: var(--accent, #1a56db); }
-
-.qcard-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 14px 16px; background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 60%); }
-.qcard-carrier-pill { background: rgba(255,255,255,0.15); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25); color: #fff; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; }
-
-.qcard-badge { position: absolute; top: 12px; right: 12px; z-index: 2; font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
-.badge-best { background: #10b981; color: #fff; }
-.badge-fast { background: #f59e0b; color: #fff; }
-
-.qcard-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
-.qcard-service { font-size: 1rem; font-weight: 700; color: #1e293b; }
-.qcard-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.qtag { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: #f1f5f9; color: #475569; }
-.qtag-green { background: #dcfce7; color: #166534; }
-
-.qcard-price-row { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; gap: 12px; }
-.qcard-price { font-size: 1.6rem; font-weight: 800; color: #1a56db; line-height: 1; }
-.qcard-price-note { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; }
-
-.qcard-btn { flex-shrink: 0; background: #1a56db; color: #fff; border: none; border-radius: 10px; padding: 10px 18px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s, transform 0.15s; white-space: nowrap; }
-.qcard-btn:hover { background: #1e40af; transform: translateX(2px); }
-.qcard-top .qcard-btn { background: #10b981; }
-.qcard-top .qcard-btn:hover { background: #059669; }
-
-@media (max-width: 480px) {
-  .qcard-photo { height: 120px; }
-  .qcard-price { font-size: 1.3rem; }
-  .qcard-price-row { flex-direction: column; align-items: flex-start; }
-  .qcard-btn { width: 100%; justify-content: center; }
-}
